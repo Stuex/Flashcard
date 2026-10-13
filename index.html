@@ -38,8 +38,8 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-    <!-- Header -->
-    <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <!-- Header (Hidden during study mode) -->
+    <header id="app-header" class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-300">
         <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
@@ -83,13 +83,27 @@
 
         <!-- VIEW 2: STUDY SCREEN -->
         <div id="study-view" class="hidden w-full max-w-3xl flex flex-col items-center space-y-6">
+            <!-- Top Study Navigation Bar (Replaces App Header in Deck mode) -->
+            <div class="w-full flex items-center justify-between bg-slate-900/60 border border-slate-800 px-6 py-3 rounded-2xl">
+                <button onclick="prevCard()" id="prev-btn" class="flex items-center space-x-2 text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    <span>Previous Card</span>
+                </button>
+                <div class="text-xs sm:text-sm font-semibold text-slate-300">
+                    Card <span id="study-card-num" class="text-indigo-400">1</span> of <span id="study-total-num">1</span>
+                </div>
+                <button onclick="resetApp()" class="text-xs sm:text-sm font-medium text-rose-400 hover:text-rose-300 transition-colors">
+                    Quit Deck
+                </button>
+            </div>
+
             <!-- Progress Bar -->
             <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
                 <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
 
-            <!-- ENLARGED Flashcard Container -->
-            <div id="card-touch-area" class="w-full h-[420px] sm:h-[480px] perspective-1000 cursor-pointer select-none">
+            <!-- Flashcard Container (Height set to 650px on desktop) -->
+            <div id="card-touch-area" class="w-full h-[520px] sm:h-[650px] perspective-1000 cursor-pointer select-none">
                 <div id="flashcard" class="relative w-full h-full duration-500 transform-style-3d shadow-2xl rounded-3xl">
                     
                     <!-- Front Side -->
@@ -99,8 +113,8 @@
                             <span class="text-xs text-slate-500 hidden sm:inline">Tap or Space to flip</span>
                         </div>
                         
-                        <!-- Scrollable Text Area -->
-                        <div class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
+                        <!-- Scrollable Text Area (Touch scroll enabled safely) -->
+                        <div id="front-scroll-box" class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
                             <p id="card-front-text" class="text-lg sm:text-2xl font-medium text-slate-100 leading-relaxed text-center w-full"></p>
                         </div>
 
@@ -117,8 +131,8 @@
                             <span class="text-xs text-slate-500 hidden sm:inline">Tap or Space to flip back</span>
                         </div>
 
-                        <!-- Scrollable Text Area -->
-                        <div class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
+                        <!-- Scrollable Text Area (Touch scroll enabled safely) -->
+                        <div id="back-scroll-box" class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
                             <p id="card-back-text" class="text-lg sm:text-2xl font-medium text-slate-100 leading-relaxed text-center w-full"></p>
                         </div>
 
@@ -170,7 +184,8 @@
     <script>
         let cards = [];
         let currentIndex = 0;
-        let incorrectCards = [];
+        let answerHistory = []; // Tracks results {cardIndex, isCorrect} for previous navigation
+        let incorrectCards = new Set();
         let isFlipped = false;
         let correctCount = 0;
 
@@ -233,7 +248,7 @@
                 { front: "Capital of France", back: "Paris" },
                 { front: "What is 7 × 8?", back: "56" },
                 { 
-                    front: "Example of a long front card text: Can you explain the fundamental differences between synchronous and asynchronous execution in JavaScript programming?", 
+                    front: "Example of a long front card text: Can you explain the fundamental differences between synchronous and asynchronous execution in JavaScript programming and how the event loop handles them under the hood?", 
                     back: "Synchronous code executes sequentially from top to bottom, blocking further execution until the current operation completes. Asynchronous code allows long-running operations (like network calls or timers) to execute in the background without blocking the main thread." 
                 },
                 { front: "Largest planet in our solar system", back: "Jupiter" }
@@ -243,15 +258,18 @@
 
         function startSession() {
             currentIndex = 0;
-            incorrectCards = [];
+            answerHistory = [];
+            incorrectCards = new Set();
             correctCount = 0;
             isFlipped = false;
 
+            // Hide app header on deck view, show study view
+            document.getElementById('app-header').classList.add('hidden');
             document.getElementById('upload-view').classList.add('hidden');
             document.getElementById('complete-view').classList.add('hidden');
             document.getElementById('study-view').classList.remove('hidden');
-            document.getElementById('deck-stats').classList.remove('hidden');
             document.getElementById('total-cards-num').innerText = cards.length;
+            document.getElementById('study-total-num').innerText = cards.length;
 
             updateCardDisplay();
         }
@@ -267,10 +285,13 @@
         }
 
         function handleAnswer(isCorrect) {
+            // Record history for previous button
+            answerHistory[currentIndex] = isCorrect;
+
             if (!isCorrect) {
-                incorrectCards.push(cards[currentIndex]);
+                incorrectCards.add(currentIndex);
             } else {
-                correctCount++;
+                incorrectCards.delete(currentIndex); // clear if changed from incorrect to correct
             }
 
             currentIndex++;
@@ -284,28 +305,46 @@
             }
         }
 
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                isFlipped = false;
+                document.getElementById('flashcard').classList.remove('rotate-y-180');
+                setTimeout(updateCardDisplay, 150);
+            }
+        }
+
         function updateCardDisplay() {
             document.getElementById('current-card-num').innerText = currentIndex + 1;
+            document.getElementById('study-card-num').innerText = currentIndex + 1;
             document.getElementById('card-front-text').innerText = cards[currentIndex].front;
             document.getElementById('card-back-text').innerText = cards[currentIndex].back;
             
+            // Enable/disable previous button
+            document.getElementById('prev-btn').disabled = (currentIndex === 0);
+
             // Reset scroll positions to top when loading new card
-            document.getElementById('card-front-text').parentElement.scrollTop = 0;
-            document.getElementById('card-back-text').parentElement.scrollTop = 0;
+            document.getElementById('front-scroll-box').scrollTop = 0;
+            document.getElementById('back-scroll-box').scrollTop = 0;
 
             const progress = (currentIndex / cards.length) * 100;
             document.getElementById('progress-bar').style.width = `${progress}%`;
         }
 
         function endSession() {
+            // Recalculate correct count based on final history
+            correctCount = 0;
+            for (let i = 0; i < cards.length; i++) {
+                if (answerHistory[i] === true) correctCount++;
+            }
+
             document.getElementById('study-view').classList.add('hidden');
-            document.getElementById('deck-stats').classList.add('hidden');
             document.getElementById('complete-view').classList.remove('hidden');
 
             document.getElementById('completion-summary').innerText = `You got ${correctCount} out of ${cards.length} cards correct.`;
 
             const exportBtn = document.getElementById('export-btn');
-            if (incorrectCards.length > 0) {
+            if (incorrectCards.size > 0) {
                 exportBtn.classList.remove('hidden');
             } else {
                 exportBtn.classList.add('hidden');
@@ -319,11 +358,11 @@
         }
 
         function exportIncorrectExcel() {
-            if (incorrectCards.length === 0) return;
+            if (incorrectCards.size === 0) return;
 
             const wsData = [["Front", "Back"]];
-            incorrectCards.forEach(card => {
-                wsData.push([card.front, card.back]);
+            incorrectCards.forEach(index => {
+                wsData.push([cards[index].front, cards[index].back]);
             });
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -334,6 +373,9 @@
         }
 
         function resetApp() {
+            // Bring back the app header when exiting study mode
+            document.getElementById('app-header').classList.remove('hidden');
+            document.getElementById('study-view').classList.add('hidden');
             document.getElementById('complete-view').classList.add('hidden');
             document.getElementById('upload-view').classList.remove('hidden');
             fileInput.value = "";
@@ -359,21 +401,35 @@
             }
         });
 
-        // --- Touch & Gesture Support (Swipe & Tap) ---
+        // --- Touch & Gesture Support (Swipe & Tap) with Scroll Safety ---
         const cardTouchArea = document.getElementById('card-touch-area');
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
         let touchEndY = 0;
+        let isScrollingText = false;
 
         cardTouchArea.addEventListener('touchstart', (e) => {
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
+            
+            // Check if touch started inside a scrollable text area that is currently scrollable
+            const activeBox = isFlipped ? document.getElementById('back-scroll-box') : document.getElementById('front-scroll-box');
+            isScrollingText = activeBox.scrollHeight > activeBox.clientHeight;
         }, { passive: true });
 
         cardTouchArea.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
+            
+            // If the user was actively scrolling vertically inside long text, do not trigger swipe/flip
+            const deltaY = Math.abs(touchEndY - touchStartY);
+            const deltaX = Math.abs(touchEndX - touchStartX);
+
+            if (isScrollingText && deltaY > deltaX && deltaY > 30) {
+                return; // Let native scroll happen
+            }
+
             handleGesture();
         }, { passive: true });
 
@@ -392,7 +448,7 @@
                     handleAnswer(false);
                 }
             } 
-            // Tap or Vertical Swipe -> Flip
+            // Tap (minimal movement) -> Flip
             else if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
                 flipCard();
             }
