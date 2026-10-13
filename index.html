@@ -18,6 +18,22 @@
         .transform-style-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
+
+        /* Custom Modern Scrollbar for Long Content */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -36,7 +52,7 @@
     </header>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-4xl w-full mx-auto p-6 flex flex-col justify-center items-center">
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center items-center">
 
         <!-- VIEW 1: UPLOAD SCREEN -->
         <div id="upload-view" class="w-full max-w-xl text-center space-y-6 transition-all duration-500">
@@ -66,36 +82,51 @@
         </div>
 
         <!-- VIEW 2: STUDY SCREEN -->
-        <div id="study-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-6">
+        <div id="study-view" class="hidden w-full max-w-3xl flex flex-col items-center space-y-6">
             <!-- Progress Bar -->
             <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
                 <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
 
-            <!-- Flashcard Container -->
-            <div class="w-full h-80 sm:h-96 perspective-1000 cursor-pointer" onclick="flipCard()">
+            <!-- ENLARGED Flashcard Container -->
+            <div id="card-touch-area" class="w-full h-[420px] sm:h-[480px] perspective-1000 cursor-pointer select-none">
                 <div id="flashcard" class="relative w-full h-full duration-500 transform-style-3d shadow-2xl rounded-3xl">
+                    
                     <!-- Front Side -->
-                    <div class="absolute inset-0 w-full h-full bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-xl">
-                        <span class="text-xs uppercase tracking-widest text-indigo-400 font-bold">Front (Column A)</span>
-                        <div class="flex-1 flex items-center justify-center text-center">
-                            <p id="card-front-text" class="text-xl sm:text-2xl font-medium text-slate-100"></p>
+                    <div class="absolute inset-0 w-full h-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 flex flex-col justify-between backface-hidden shadow-xl">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs uppercase tracking-widest text-indigo-400 font-bold">Front (Column A)</span>
+                            <span class="text-xs text-slate-500 hidden sm:inline">Tap or Space to flip</span>
                         </div>
-                        <div class="text-center text-xs text-slate-500 flex items-center justify-center space-x-1">
-                            <span>Click or press Space to flip</span>
+                        
+                        <!-- Scrollable Text Area -->
+                        <div class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
+                            <p id="card-front-text" class="text-lg sm:text-2xl font-medium text-slate-100 leading-relaxed text-center w-full"></p>
+                        </div>
+
+                        <div class="text-center text-xs text-slate-500 flex items-center justify-between border-t border-slate-800/80 pt-3">
+                            <span>Swipe Left: Incorrect</span>
+                            <span>Swipe Right: Correct</span>
                         </div>
                     </div>
 
                     <!-- Back Side -->
-                    <div class="absolute inset-0 w-full h-full bg-indigo-950/40 border border-indigo-500/30 rounded-3xl p-8 flex flex-col justify-between backface-hidden rotate-y-180 shadow-xl backdrop-blur-md">
-                        <span class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Back (Column B)</span>
-                        <div class="flex-1 flex items-center justify-center text-center">
-                            <p id="card-back-text" class="text-xl sm:text-2xl font-medium text-slate-100"></p>
+                    <div class="absolute inset-0 w-full h-full bg-indigo-950/40 border border-indigo-500/30 rounded-3xl p-6 sm:p-10 flex flex-col justify-between backface-hidden rotate-y-180 shadow-xl backdrop-blur-md">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Back (Column B)</span>
+                            <span class="text-xs text-slate-500 hidden sm:inline">Tap or Space to flip back</span>
                         </div>
-                        <div class="text-center text-xs text-slate-500">
-                            <span>Rate your answer below</span>
+
+                        <!-- Scrollable Text Area -->
+                        <div class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
+                            <p id="card-back-text" class="text-lg sm:text-2xl font-medium text-slate-100 leading-relaxed text-center w-full"></p>
+                        </div>
+
+                        <div class="text-center text-xs text-slate-500 border-t border-slate-800/80 pt-3">
+                            <span>Rate answer using buttons or arrow keys</span>
                         </div>
                     </div>
+
                 </div>
             </div>
 
@@ -103,11 +134,11 @@
             <div id="study-controls" class="w-full grid grid-cols-2 gap-4 pt-2">
                 <button onclick="handleAnswer(false)" class="group py-4 px-6 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-semibold transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 shadow-lg shadow-rose-950/30">
                     <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    <span>Incorrect (Left Arrow)</span>
+                    <span>Incorrect (←)</span>
                 </button>
                 <button onclick="handleAnswer(true)" class="group py-4 px-6 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-semibold transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 shadow-lg shadow-emerald-950/30">
                     <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span>Correct (Right Arrow)</span>
+                    <span>Correct (→)</span>
                 </button>
             </div>
         </div>
@@ -180,13 +211,11 @@
         function parseCardsData(rows) {
             cards = [];
             rows.forEach((row) => {
-                // Column A = index 0, Column B = index 1
                 if (row[0] !== undefined && row[1] !== undefined && String(row[0]).trim() !== "" && String(row[1]).trim() !== "") {
                     cards.push({ front: String(row[0]), back: String(row[1]) });
                 }
             });
 
-            // Optional: Remove header row if row[0] is literally "front" or "question"
             if (cards.length > 0 && (cards[0].front.toLowerCase() === 'front' || cards[0].front.toLowerCase() === 'question')) {
                 cards.shift();
             }
@@ -202,10 +231,12 @@
         function loadSampleDeck() {
             cards = [
                 { front: "Capital of France", back: "Paris" },
-                { front: "Chemical symbol for Gold", back: "Au" },
                 { front: "What is 7 × 8?", back: "56" },
-                { front: "Largest planet in our solar system", back: "Jupiter" },
-                { front: "HTML stands for?", back: "HyperText Markup Language" }
+                { 
+                    front: "Example of a long front card text: Can you explain the fundamental differences between synchronous and asynchronous execution in JavaScript programming?", 
+                    back: "Synchronous code executes sequentially from top to bottom, blocking further execution until the current operation completes. Asynchronous code allows long-running operations (like network calls or timers) to execute in the background without blocking the main thread." 
+                },
+                { front: "Largest planet in our solar system", back: "Jupiter" }
             ];
             startSession();
         }
@@ -249,7 +280,6 @@
             if (currentIndex >= cards.length) {
                 endSession();
             } else {
-                // Short delay to let the card flip back before loading next card text
                 setTimeout(updateCardDisplay, 150);
             }
         }
@@ -259,6 +289,10 @@
             document.getElementById('card-front-text').innerText = cards[currentIndex].front;
             document.getElementById('card-back-text').innerText = cards[currentIndex].back;
             
+            // Reset scroll positions to top when loading new card
+            document.getElementById('card-front-text').parentElement.scrollTop = 0;
+            document.getElementById('card-back-text').parentElement.scrollTop = 0;
+
             const progress = (currentIndex / cards.length) * 100;
             document.getElementById('progress-bar').style.width = `${progress}%`;
         }
@@ -277,7 +311,6 @@
                 exportBtn.classList.add('hidden');
             }
 
-            // Trigger celebratory confetti
             confetti({
                 particleCount: 100,
                 spread: 70,
@@ -288,7 +321,6 @@
         function exportIncorrectExcel() {
             if (incorrectCards.length === 0) return;
 
-            // Prepare worksheet rows with Column A (Front) and Column B (Back) headers
             const wsData = [["Front", "Back"]];
             incorrectCards.forEach(card => {
                 wsData.push([card.front, card.back]);
@@ -298,7 +330,6 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Incorrect Cards");
 
-            // Trigger file download
             XLSX.writeFile(wb, "incorrect_flashcards.xlsx");
         }
 
@@ -308,21 +339,64 @@
             fileInput.value = "";
         }
 
-        // Keyboard Shortcuts Support
+        // --- Keyboard Shortcuts ---
         document.addEventListener('keydown', (e) => {
-            if (document.getElementById('study-view').classList.contains('hidden')) return;
-
-            if (e.code === 'Space') {
-                e.preventDefault();
-                flipCard();
-            } else if (e.code === 'ArrowLeft') {
-                e.preventDefault();
-                handleAnswer(false);
-            } else if (e.code === 'ArrowRight') {
-                e.preventDefault();
-                handleAnswer(true);
+            if (!document.getElementById('study-view').classList.contains('hidden')) {
+                if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+                    e.preventDefault();
+                    flipCard();
+                } else if (e.code === 'ArrowLeft') {
+                    e.preventDefault();
+                    handleAnswer(false);
+                } else if (e.code === 'ArrowRight') {
+                    e.preventDefault();
+                    handleAnswer(true);
+                }
+            } else if (!document.getElementById('complete-view').classList.contains('hidden')) {
+                if (e.code === 'KeyR') {
+                    resetApp();
+                }
             }
         });
+
+        // --- Touch & Gesture Support (Swipe & Tap) ---
+        const cardTouchArea = document.getElementById('card-touch-area');
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        cardTouchArea.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        cardTouchArea.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleGesture();
+        }, { passive: true });
+
+        function handleGesture() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
+
+            // Horizontal Swipe Recognition
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe Right -> Correct
+                    handleAnswer(true);
+                } else {
+                    // Swipe Left -> Incorrect
+                    handleAnswer(false);
+                }
+            } 
+            // Tap or Vertical Swipe -> Flip
+            else if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
+                flipCard();
+            }
+        }
     </script>
 </body>
 </html>
