@@ -3,903 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stuex Flashcard Game</title>
-    <!-- Include SheetJS for Excel processing and FileSaver for export -->
+    <title>FlashFlow - Modern Flashcard App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (xlsx) for Excel Import/Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <!-- Canvas Confetti for Completion Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #000000;
-            --text-color: #FFFFFF;
-            --border-color: #333333;
-            --hover-border: #555555;
-            --green-color: #00C853;
-            --red-color: #D50000;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        /* Utility Classes */
-        .hidden { display: none !important; }
-        .flex { display: flex; }
-        .flex-col { flex-direction: column; }
-        .items-center { align-items: center; }
-        .justify-center { justify-content: center; }
-        .justify-between { justify-content: space-between; }
-
-        /* App Container */
-        #app {
-            width: 100%;
-            max-width: 850px;
-            margin: 0 auto;
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* Header Hierarchy */
-        header {
-            text-align: center;
-            margin-top: 30px;
-            margin-bottom: 30px;
-        }
-        header .small-title {
-            font-size: 14px;
-            color: #888888;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        header .big-title {
-            font-size: 42px;
-            font-weight: bold;
-            margin: 5px 0;
-            letter-spacing: 2px;
-        }
-        header .author {
-            font-size: 13px;
-            color: #888888;
-        }
-
-        /* Main Menu Layout */
-        .main-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            flex: 1;
-            justify-content: center;
-            max-width: 500px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .card-box {
-            border: 1px solid var(--border-color);
-            padding: 20px;
-            border-radius: 8px;
-            background-color: var(--bg-color);
-        }
-
-        .import-section {
-            text-align: center;
-            border: 2px dashed var(--border-color);
-            padding: 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .import-section:hover {
-            border-color: var(--hover-border);
-        }
-        .import-section input[type="file"] {
-            display: none;
-        }
-
-        /* Controls / Toggles */
-        .control-group {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 15px;
-        }
-        .control-group select {
-            background: #111;
-            color: #fff;
-            border: 1px solid var(--border-color);
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-
-        /* Toggle Switch */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #333; transition: .3s; border-radius: 24px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-            background-color: white; transition: .3s; border-radius: 50%;
-        }
-        input:checked + .slider { background-color: var(--green-color); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        /* Revmast Link Box */
-        .revmast-box {
-            text-align: center;
-        }
-        .revmast-box a {
-            color: #4da6ff;
-            text-decoration: none;
-            word-break: break-all;
-        }
-        .revmast-box a:hover { text-decoration: underline; }
-
-        /* Buttons */
-        .btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .btn:hover { background: #111; border-color: var(--hover-border); }
-        .btn-primary { background: #fff; color: #000; border-color: #fff; }
-        .btn-primary:hover { background: #e0e0e0; }
-
-        /* Game Page Layout */
-        #game-page {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            position: relative;
-        }
-
-        /* Clean Non-Overlapping Game Header Bar */
-        .game-header-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #0a0a0a;
-            border: 1px solid var(--border-color);
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .game-settings-btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: border-color 0.2s;
-        }
-        .game-settings-btn:hover { border-color: var(--hover-border); }
-
-        #progress-indicator {
-            font-size: 14px;
-            color: #ccc;
-            font-weight: bold;
-        }
-
-        #timer-display {
-            color: #ff5252;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        /* 3D Flashcard Container & Flip Animations */
-        .flashcard-scene {
-            perspective: 1200px;
-            flex: 1;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .flashcard-card {
-            width: 100%;
-            height: 100%;
-            min-height: 48vh;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            background: #050505;
-            cursor: pointer;
-        }
-
-        .flashcard-card.is-flipped {
-            transform: rotateY(180deg);
-        }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            text-align: center;
-            overflow-y: auto;
-            word-break: break-word;
-        }
-
-        .card-back {
-            transform: rotateY(180deg);
-        }
-
-        .flashcard-content {
-            font-size: 24px;
-            line-height: 1.5;
-            max-width: 100%;
-        }
-        .flashcard-content img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 15px auto;
-            cursor: zoom-in;
-            transition: transform 0.2s ease;
-        }
-
-        /* Card Change Slide & Fade Animation */
-        .animate-card-change {
-            animation: cardFadeIn 0.35s ease-out;
-        }
-        @keyframes cardFadeIn {
-            from { opacity: 0; transform: scale(0.97) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* Bottom Controls (Big Symbols, No Images) */
-        .game-bottom-controls {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            margin-bottom: 15px;
-        }
-
-        .circle-btn {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            border: 2px solid var(--border-color);
-            background: #111;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 32px;
-            font-weight: bold;
-            transition: transform 0.15s, background 0.2s, border-color 0.2s;
-            position: relative;
-        }
-        .circle-btn:hover { background: #222; border-color: var(--hover-border); transform: scale(1.08); }
-        .circle-btn.green { color: var(--green-color); border-color: rgba(0,200,83,0.5); }
-        .circle-btn.red { color: var(--red-color); border-color: rgba(213,0,0,0.5); }
-
-        /* Floating Feedback Bubbles */
-        .floating-bubble {
-            position: absolute;
-            bottom: 100px;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 15px;
-            pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
-            z-index: 100;
-        }
-        .floating-bubble.green { background: var(--green-color); color: #000; }
-        .floating-bubble.red { background: var(--red-color); color: #fff; }
-
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0.8); opacity: 1; }
-            100% { transform: translateY(-70px) scale(1.1); opacity: 0; }
-        }
-
-        /* Fullscreen Image Overlay */
-        #fullscreen-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        #fullscreen-overlay img {
-            max-width: 90vw;
-            max-height: 90vh;
-            object-fit: contain;
-        }
-        .close-fullscreen {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            font-size: 36px;
-            color: #fff;
-            cursor: pointer;
-            background: none;
-            border: none;
-        }
-
-        /* Modal Overlay */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-        }
-        .modal-content {
-            background: #111;
-            border: 1px solid var(--border-color);
-            padding: 30px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 450px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .modal-content h3 { font-size: 20px; margin-bottom: 5px; }
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        /* How to play styles */
-        .howto-step {
-            line-height: 1.5;
-            font-size: 14px;
-            color: #ccc;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 600px) {
-            header .big-title { font-size: 32px; }
-            .circle-btn { width: 60px; height: 60px; font-size: 26px; }
-            .game-bottom-controls { gap: 15px; }
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
     </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-    <div id="app">
-        <!-- MAIN MENU PAGE -->
-        <div id="main-menu-page" class="main-menu">
-            <header>
-                <div class="small-title">Stuex</div>
-                <div class="big-title">Flashcard</div>
-                <div class="author">By Pankaj Mehra</div>
-            </header>
-
-            <div class="import-section" onclick="document.getElementById('file-input').click()">
-                <div style="font-size: 32px; margin-bottom: 10px;">📁</div>
-                <div style="font-weight: bold; margin-bottom: 5px;">Import Excel or Google Sheet File</div>
-                <div style="font-size: 12px; color: #888;">Supports .xlsx files (Columns A & B)</div>
-                <input type="file" id="file-input" accept=".xlsx, .xls, .csv" onchange="handleFileImport(event)">
+    <!-- Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             </div>
-
-            <div class="card-box flex flex-col gap-2">
-                <div class="control-group">
-                    <span>Timer Toggle</span>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <select id="timer-duration" onchange="updateTimerSetting()">
-                            <option value="10">10s</option>
-                            <option value="20">20s</option>
-                            <option value="30" selected>30s</option>
-                            <option value="40">40s</option>
-                            <option value="50">50s</option>
-                            <option value="60">60s</option>
-                            <option value="70">70s</option>
-                            <option value="80">80s</option>
-                            <option value="90">90s</option>
-                            <option value="100">100s</option>
-                            <option value="110">110s</option>
-                            <option value="120">120s</option>
-                        </select>
-                        <label class="switch">
-                            <input type="checkbox" id="timer-toggle" onchange="toggleTimerSetting()">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="control-group" style="margin-top: 15px;">
-                    <span>Randomize Cards</span>
-                    <label class="switch">
-                        <input type="checkbox" id="randomize-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="card-box revmast-box">
-                <div style="font-weight: bold; margin-bottom: 8px; color: #aaa; font-size: 14px;">revmast</div>
-                <a href="https://stuex.github.io/Revmast/" target="_blank">https://stuex.github.io/Revmast/</a>
-            </div>
-
-            <button class="btn btn-primary" onclick="openHowToPlay()">How to Play</button>
-            <button class="btn" onclick="loadDemoCards()">Load Demo Flashcards</button>
+            <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">FlashFlow</span>
         </div>
+        <div id="deck-stats" class="hidden text-sm font-medium text-slate-400 bg-slate-900 px-4 py-2 rounded-full border border-slate-800">
+            Card <span id="current-card-num" class="text-indigo-400 font-semibold">1</span> of <span id="total-cards-num">1</span>
+        </div>
+    </header>
 
-        <!-- GAME PAGE -->
-        <div id="game-page" class="hidden">
-            <!-- Non-overlapping Game Header Bar -->
-            <div class="game-header-bar">
-                <button class="game-settings-btn" onclick="openSettingsModal()">⚙ Settings</button>
-                <div id="progress-indicator">Flashcard 1 out of 10</div>
-                <div id="timer-display" class="hidden">Time: 30s</div>
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-6 flex flex-col justify-center items-center">
+
+        <!-- VIEW 1: UPLOAD SCREEN -->
+        <div id="upload-view" class="w-full max-w-xl text-center space-y-6 transition-all duration-500">
+            <div class="space-y-3">
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Master Any Subject with Ease</h1>
+                <p class="text-slate-400 text-sm sm:text-base">Upload your Excel file. We'll read <span class="text-indigo-400 font-medium">Column A</span> as the front and <span class="text-indigo-400 font-medium">Column B</span> as the back.</p>
             </div>
 
-            <!-- 3D Flashcard Scene -->
-            <div class="flashcard-scene" id="flashcard-box" tabindex="0">
-                <div class="flashcard-card animate-card-change" id="flashcard-card-elem" onclick="flipCard()">
-                    <div class="card-face card-front">
-                        <div class="flashcard-content" id="card-front-content">Front Content</div>
+            <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900/40 hover:bg-slate-900/80 rounded-3xl p-10 transition-all duration-300 cursor-pointer group shadow-xl">
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden">
+                <div class="flex flex-col items-center space-y-4">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                     </div>
-                    <div class="card-face card-back">
-                        <div class="flashcard-content" id="card-back-content">Back Content</div>
+                    <div>
+                        <p class="font-semibold text-slate-200">Click to upload or drag & drop</p>
+                        <p class="text-xs text-slate-500 mt-1">Excel sheets (.xlsx, .xls)</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Big Circular Control Symbols (No Images) -->
-            <div class="game-bottom-controls">
-                <button class="circle-btn green" onclick="markCard(true)" title="Correct (Right Arrow / Swipe Left)">
-                    ✔
-                </button>
-                <button class="circle-btn red" onclick="markCard(false)" title="Wrong (Left Arrow / Swipe Right)">
-                    ✖
-                </button>
-                <button class="circle-btn" onclick="undoCard()" title="Undo (Right Shift)">
-                    ↩
-                </button>
-                <button class="circle-btn" onclick="flipCard()" title="Flip Card (Enter)">
-                    ↻
+            <div class="pt-2 flex justify-center gap-4">
+                <button onclick="loadSampleDeck()" class="text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors">
+                    Load Sample Deck
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- MODALS & OVERLAYS -->
-    <div id="modal-container"></div>
+        <!-- VIEW 2: STUDY SCREEN -->
+        <div id="study-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-6">
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
 
+            <!-- Flashcard Container -->
+            <div class="w-full h-80 sm:h-96 perspective-1000 cursor-pointer" onclick="flipCard()">
+                <div id="flashcard" class="relative w-full h-full duration-500 transform-style-3d shadow-2xl rounded-3xl">
+                    <!-- Front Side -->
+                    <div class="absolute inset-0 w-full h-full bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-xl">
+                        <span class="text-xs uppercase tracking-widest text-indigo-400 font-bold">Front (Column A)</span>
+                        <div class="flex-1 flex items-center justify-center text-center">
+                            <p id="card-front-text" class="text-xl sm:text-2xl font-medium text-slate-100"></p>
+                        </div>
+                        <div class="text-center text-xs text-slate-500 flex items-center justify-center space-x-1">
+                            <span>Click or press Space to flip</span>
+                        </div>
+                    </div>
+
+                    <!-- Back Side -->
+                    <div class="absolute inset-0 w-full h-full bg-indigo-950/40 border border-indigo-500/30 rounded-3xl p-8 flex flex-col justify-between backface-hidden rotate-y-180 shadow-xl backdrop-blur-md">
+                        <span class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Back (Column B)</span>
+                        <div class="flex-1 flex items-center justify-center text-center">
+                            <p id="card-back-text" class="text-xl sm:text-2xl font-medium text-slate-100"></p>
+                        </div>
+                        <div class="text-center text-xs text-slate-500">
+                            <span>Rate your answer below</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div id="study-controls" class="w-full grid grid-cols-2 gap-4 pt-2">
+                <button onclick="handleAnswer(false)" class="group py-4 px-6 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-semibold transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 shadow-lg shadow-rose-950/30">
+                    <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <span>Incorrect (Left Arrow)</span>
+                </button>
+                <button onclick="handleAnswer(true)" class="group py-4 px-6 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-semibold transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 shadow-lg shadow-emerald-950/30">
+                    <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Correct (Right Arrow)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 3: COMPLETION SCREEN -->
+        <div id="complete-view" class="hidden w-full max-w-md text-center space-y-6 bg-slate-900/60 border border-slate-800 p-8 rounded-3xl shadow-2xl backdrop-blur-xl animate-fade-in">
+            <div class="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-bold">Deck Completed!</h2>
+                <p id="completion-summary" class="text-slate-400 text-sm">You got X out of Y cards correct.</p>
+            </div>
+
+            <div class="space-y-3 pt-2">
+                <button id="export-btn" onclick="exportIncorrectExcel()" class="hidden w-full py-3.5 px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold transition-all flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Download Incorrect Cards (.xlsx)</span>
+                </button>
+                <button onclick="resetApp()" class="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-lg shadow-indigo-600/30">
+                    Study Another Deck
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
     <script>
-        // App State
-        let flashcards = [];
+        let cards = [];
         let currentIndex = 0;
-        let isShowingBack = false;
-        let historyStack = [];
-        let wrongCardsMap = {};
-        let originalFileName = "Stuex_Flashcards";
-        
-        // Timer & Settings
-        let timerEnabled = false;
-        let timerDuration = 30;
-        let timerInterval = null;
-        let timeLeft = 30;
-        let randomizeEnabled = true;
+        let incorrectCards = [];
+        let isFlipped = false;
+        let correctCount = 0;
 
-        // Image Zoom State
-        let currentZoom = 1;
-        let panX = 0;
-        let panY = 0;
+        // Drag and Drop & File Input Setup
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('excel-file-input');
 
-        // Touch swipe gestures
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        let touchEndY = 0;
-
-        const sceneBox = document.getElementById('flashcard-box');
-        sceneBox.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, {passive: true});
-
-        sceneBox.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-            handleGesture();
-        }, {passive: true});
-
-        function handleGesture() {
-            const diffX = touchEndX - touchStartX;
-            const diffY = touchEndY - touchStartY;
-            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 60) {
-                if (diffX < 0) markCard(true);  // Swipe Left -> Correct
-                else markCard(false);           // Swipe Right -> Wrong
-            }
-        }
-
-        // Keyboard Shortcuts
-        window.addEventListener('keydown', (e) => {
-            if (document.getElementById('game-page').classList.contains('hidden')) return;
-
-            if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Enter', 'ShiftRight', 'ShiftLeft'].includes(e.key)) {
-                if (!e.ctrlKey) e.preventDefault();
-            }
-
-            if (e.ctrlKey && e.key === '=') {
-                e.preventDefault();
-                zoomImage(0.2);
-            } else if (e.ctrlKey && e.key === '-') {
-                e.preventDefault();
-                zoomImage(-0.2);
-            } else if (!e.ctrlKey) {
-                if (e.key === 'ArrowRight') markCard(true);
-                else if (e.key === 'ArrowLeft') markCard(false);
-                else if (e.key === 'ShiftRight' || e.key === 'ShiftLeft') undoCard();
-                else if (e.key === 'Enter') {
-                    const fs = document.getElementById('fullscreen-overlay');
-                    if (fs) closeFullscreen();
-                    else flipCard();
-                }
-            }
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-500', 'bg-slate-900'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-indigo-500', 'bg-slate-900'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-indigo-500', 'bg-slate-900');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
         });
 
-        function loadDemoCards() {
-            originalFileName = "Demo_Flashcards.xlsx";
-            flashcards = [
-                { front: "<b>What is Stuex?</b><br>A modern flashcard web application.", back: "Optimized for mobile and PC with 3D flip animations and custom formatting.", sheetName: "Sheet1" },
-                { front: "What shortcut marks a card correct?", back: "Right Arrow (or Swipe Left).", sheetName: "Sheet1" },
-                { front: "What shortcut flips a flashcard?", back: "The Enter key or clicking the card.", sheetName: "Sheet1" },
-                { front: "How are columns mapped in Excel?", back: "Column A is Front, Column B is Back.", sheetName: "Sheet2" },
-                { front: "What is the background theme of Stuex?", back: "Pure black (#000000) with white UI text.", sheetName: "Sheet2" }
-            ];
-            startGame();
-        }
-
-        function handleFileImport(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            originalFileName = file.name;
-
+        function handleFile(file) {
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            reader.onload = function(e) {
                 try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, { type: 'array', cellStyles: true, cellHTML: true });
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
                     
-                    flashcards = [];
-                    wrongCardsMap = {};
-
-                    workbook.SheetNames.forEach(sheetName => {
-                        const worksheet = workbook.Sheets[sheetName];
-                        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                        rows.forEach((row, rowIndex) => {
-                            let frontVal = row[0];
-                            let backVal = row[1];
-
-                            if (frontVal !== undefined && frontVal !== null && String(frontVal).trim() !== "") {
-                                flashcards.push({
-                                    front: String(frontVal),
-                                    back: backVal !== undefined && backVal !== null ? String(backVal) : "(No Back Content)",
-                                    sheetName: sheetName,
-                                    originalIndex: rowIndex
-                                });
-                            }
-                        });
-                    });
-
-                    if (flashcards.length === 0) {
-                        alert("No valid flashcards found in Columns A and B.");
-                        return;
-                    }
-
-                    startGame();
+                    parseCardsData(json);
                 } catch (err) {
+                    alert("Error reading Excel file. Please ensure it's a valid .xlsx or .xls file.");
                     console.error(err);
-                    alert("Error parsing file.");
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function startGame() {
-            randomizeEnabled = document.getElementById('randomize-toggle').checked;
-            if (randomizeEnabled) {
-                for (let i = flashcards.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+        function parseCardsData(rows) {
+            cards = [];
+            rows.forEach((row) => {
+                // Column A = index 0, Column B = index 1
+                if (row[0] !== undefined && row[1] !== undefined && String(row[0]).trim() !== "" && String(row[1]).trim() !== "") {
+                    cards.push({ front: String(row[0]), back: String(row[1]) });
                 }
+            });
+
+            // Optional: Remove header row if row[0] is literally "front" or "question"
+            if (cards.length > 0 && (cards[0].front.toLowerCase() === 'front' || cards[0].front.toLowerCase() === 'question')) {
+                cards.shift();
             }
 
-            currentIndex = 0;
-            isShowingBack = false;
-            historyStack = [];
-            wrongCardsMap = {};
-
-            document.getElementById('main-menu-page').classList.add('hidden');
-            document.getElementById('game-page').classList.remove('hidden');
-
-            renderCard();
-            setupTimer();
-        }
-
-        function renderCard() {
-            if (currentIndex >= flashcards.length) {
-                finishGame();
+            if (cards.length === 0) {
+                alert("No valid cards found! Make sure Column A and Column B have content.");
                 return;
             }
 
-            const card = flashcards[currentIndex];
-            document.getElementById('card-front-content').innerHTML = card.front;
-            document.getElementById('card-back-content').innerHTML = card.back;
+            startSession();
+        }
 
-            // Reset 3D flip state
-            isShowingBack = false;
-            const cardElem = document.getElementById('flashcard-card-elem');
-            cardElem.classList.remove('is-flipped');
+        function loadSampleDeck() {
+            cards = [
+                { front: "Capital of France", back: "Paris" },
+                { front: "Chemical symbol for Gold", back: "Au" },
+                { front: "What is 7 × 8?", back: "56" },
+                { front: "Largest planet in our solar system", back: "Jupiter" },
+                { front: "HTML stands for?", back: "HyperText Markup Language" }
+            ];
+            startSession();
+        }
 
-            // Trigger smooth change animation
-            cardElem.classList.remove('animate-card-change');
-            void cardElem.offsetWidth;
-            cardElem.classList.add('animate-card-change');
+        function startSession() {
+            currentIndex = 0;
+            incorrectCards = [];
+            correctCount = 0;
+            isFlipped = false;
 
-            // Update Progress & Sheet notification
-            const prog = document.getElementById('progress-indicator');
-            if (currentIndex === 0 || flashcards[currentIndex - 1].sheetName !== card.sheetName) {
-                prog.textContent = `📁 Sheet: ${card.sheetName} (${currentIndex + 1}/${flashcards.length})`;
-            } else {
-                prog.textContent = `Flashcard ${currentIndex + 1} out of ${flashcards.length}`;
-            }
+            document.getElementById('upload-view').classList.add('hidden');
+            document.getElementById('complete-view').classList.add('hidden');
+            document.getElementById('study-view').classList.remove('hidden');
+            document.getElementById('deck-stats').classList.remove('hidden');
+            document.getElementById('total-cards-num').innerText = cards.length;
 
-            currentZoom = 1;
-            sceneBox.focus();
+            updateCardDisplay();
         }
 
         function flipCard() {
-            isShowingBack = !isShowingBack;
-            const cardElem = document.getElementById('flashcard-card-elem');
-            cardElem.classList.toggle('is-flipped', isShowingBack);
+            const cardEl = document.getElementById('flashcard');
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                cardEl.classList.add('rotate-y-180');
+            } else {
+                cardEl.classList.remove('rotate-y-180');
+            }
         }
 
-        function markCard(isCorrect) {
-            const currentCard = flashcards[currentIndex];
-            
-            historyStack.push({
-                index: currentIndex,
-                isShowingBack: isShowingBack,
-                card: currentCard,
-                wasWrong: !isCorrect
-            });
-
+        function handleAnswer(isCorrect) {
             if (!isCorrect) {
-                if (!wrongCardsMap[currentCard.sheetName]) wrongCardsMap[currentCard.sheetName] = [];
-                wrongCardsMap[currentCard.sheetName] = wrongCardsMap[currentCard.sheetName].filter(c => c.originalIndex !== currentCard.originalIndex);
-                wrongCardsMap[currentCard.sheetName].push(currentCard);
-                showFloatingBubble("✖ Wrong", "red");
+                incorrectCards.push(cards[currentIndex]);
             } else {
-                if (wrongCardsMap[currentCard.sheetName]) {
-                    wrongCardsMap[currentCard.sheetName] = wrongCardsMap[currentCard.sheetName].filter(c => c.originalIndex !== currentCard.originalIndex);
-                }
-                showFloatingBubble("✔ Correct", "green");
+                correctCount++;
             }
 
             currentIndex++;
-            renderCard();
-            resetTimer();
-        }
+            isFlipped = false;
+            document.getElementById('flashcard').classList.remove('rotate-y-180');
 
-        function undoCard() {
-            if (historyStack.length === 0) {
-                showFloatingBubble("Nothing to undo", "#555");
-                return;
+            if (currentIndex >= cards.length) {
+                endSession();
+            } else {
+                // Short delay to let the card flip back before loading next card text
+                setTimeout(updateCardDisplay, 150);
             }
-            const lastAction = historyStack.pop();
-            currentIndex = lastAction.index;
-            isShowingBack = lastAction.isShowingBack;
+        }
 
-            if (lastAction.wasWrong && wrongCardsMap[lastAction.card.sheetName]) {
-                wrongCardsMap[lastAction.card.sheetName] = wrongCardsMap[lastAction.card.sheetName].filter(c => c.originalIndex !== lastAction.card.originalIndex);
+        function updateCardDisplay() {
+            document.getElementById('current-card-num').innerText = currentIndex + 1;
+            document.getElementById('card-front-text').innerText = cards[currentIndex].front;
+            document.getElementById('card-back-text').innerText = cards[currentIndex].back;
+            
+            const progress = (currentIndex / cards.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+        }
+
+        function endSession() {
+            document.getElementById('study-view').classList.add('hidden');
+            document.getElementById('deck-stats').classList.add('hidden');
+            document.getElementById('complete-view').classList.remove('hidden');
+
+            document.getElementById('completion-summary').innerText = `You got ${correctCount} out of ${cards.length} cards correct.`;
+
+            const exportBtn = document.getElementById('export-btn');
+            if (incorrectCards.length > 0) {
+                exportBtn.classList.remove('hidden');
+            } else {
+                exportBtn.classList.add('hidden');
             }
 
-            renderCard();
-            const cardElem = document.getElementById('flashcard-card-elem');
-            if (isShowingBack) cardElem.classList.add('is-flipped');
-            else cardElem.classList.remove('is-flipped');
-
-            showFloatingBubble("↩ Undone", "#555");
-            resetTimer();
+            // Trigger celebratory confetti
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
         }
 
-        function showFloatingBubble(text, type) {
-            const bubble = document.createElement('div');
-            bubble.className = `floating-bubble ${type === 'red' ? 'red' : 'green'}`;
-            if (type === '#555') bubble.style.background = '#444';
-            bubble.textContent = text;
-            sceneBox.appendChild(bubble);
-            setTimeout(() => bubble.remove(), 1000);
+        function exportIncorrectExcel() {
+            if (incorrectCards.length === 0) return;
+
+            // Prepare worksheet rows with Column A (Front) and Column B (Back) headers
+            const wsData = [["Front", "Back"]];
+            incorrectCards.forEach(card => {
+                wsData.push([card.front, card.back]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Incorrect Cards");
+
+            // Trigger file download
+            XLSX.writeFile(wb, "incorrect_flashcards.xlsx");
         }
 
-        /* Timer Management */
-        function setupTimer() {
-            timerEnabled = document.getElementById('timer-toggle').checked;
-            const timerDisp = document.getElementById('timer-display');
-            if (!timerEnabled) {
-                timerDisp.classList.add('hidden');
-                clearInterval(timerInterval);
-                return;
-            }
-            timerDuration = parseInt(document.getElementById('timer-duration').value) || 30;
-            resetTimer();
+        function resetApp() {
+            document.getElementById('complete-view').classList.add('hidden');
+            document.getElementById('upload-view').classList.remove('hidden');
+            fileInput.value = "";
         }
 
-        function toggleTimerSetting() { setupTimer(); }
-        function updateTimerSetting() { if (document.getElementById('timer-toggle').checked) setupTimer(); }
+        // Keyboard Shortcuts Support
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('study-view').classList.contains('hidden')) return;
 
-        function resetTimer() {
-            if (!timerEnabled) return;
-            clearInterval(timerInterval);
-            timeLeft = timerDuration;
-            const timerDisp = document.getElementById('timer-display');
-            timerDisp.classList.remove('hidden');
-            timerDisp.textContent = `Time: ${timeLeft}s`;
-
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerDisp.textContent = `Time: ${timeLeft}s`;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    markCard(false);
-                }
-            }, 1000);
-        }
-
-        /* Image Zoom & Fullscreen */
-        function zoomImage(delta) {
-            currentZoom = Math.max(0.5, Math.min(3, currentZoom + delta));
-            const img = sceneBox.querySelector('.card-face img');
-            if (img) img.style.transform = `scale(${currentZoom})`;
-        }
-
-        document.addEventListener('click', function(e) {
-            if (e.target.tagName === 'IMG' && e.target.closest('#flashcard-box')) {
-                openFullscreen(e.target.src);
+            if (e.code === 'Space') {
+                e.preventDefault();
+                flipCard();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                handleAnswer(false);
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                handleAnswer(true);
             }
         });
-
-        function openFullscreen(src) {
-            const overlay = document.createElement('div');
-            overlay.id = 'fullscreen-overlay';
-            overlay.innerHTML = `
-                <button class="close-fullscreen" onclick="closeFullscreen()">×</button>
-                <img src="${src}" alt="Fullscreen Image">
-            `;
-            document.body.appendChild(overlay);
-        }
-
-        function closeFullscreen() {
-            const overlay = document.getElementById('fullscreen-overlay');
-            if (overlay) overlay.remove();
-        }
-
-        /* Settings Modal */
-        function openSettingsModal() {
-            clearInterval(timerInterval);
-            document.getElementById('modal-container').innerHTML = `
-                <div class="modal-overlay">
-                    <div class="modal-content">
-                        <h3>Settings</h3>
-                        <button class="btn" onclick="closeModal(); quitGame();">Quit Game</button>
-                        <button class="btn" onclick="closeModal(); exportWrongExcel();">Get Excel for Red Button Tapped Cards</button>
-                        <div class="modal-buttons" style="margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="closeModal(); resumeGame();">Resume Game</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
-        function resumeGame() { if (timerEnabled) resetTimer(); sceneBox.focus(); }
-
-        function quitGame() {
-            clearInterval(timerInterval);
-            document.getElementById('game-page').classList.add('hidden');
-            document.getElementById('main-menu-page').classList.remove('hidden');
-        }
-
-        function finishGame() {
-            clearInterval(timerInterval);
-            const totalWrong = Object.values(wrongCardsMap).reduce((acc, sheet) => acc + sheet.length, 0);
-
-            document.getElementById('modal-container').innerHTML = `
-                <div class="modal-overlay">
-                    <div class="modal-content">
-                        <h3>Game Completed!</h3>
-                        <p style="color: #ccc; font-size: 14px;">Total wrong answers marked: ${totalWrong}</p>
-                        <p style="font-weight: bold; margin-top: 10px;">Do you want to get excel for wrong answers?</p>
-                        <div class="modal-buttons" style="margin-top: 15px;">
-                            <button class="btn" onclick="closeModal(); quitGame();">No</button>
-                            <button class="btn btn-primary" onclick="closeModal(); exportWrongExcel(); quitGame();">Yes, Export Excel</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function exportWrongExcel() {
-            const hasWrong = Object.values(wrongCardsMap).some(sheet => sheet.length > 0);
-            if (!hasWrong) {
-                alert("No wrong answers recorded to export!");
-                return;
-            }
-
-            const wb = XLSX.utils.book_new();
-            for (const [sheetName, cards] of Object.entries(wrongCardsMap)) {
-                if (cards.length === 0) continue;
-                const wsData = cards.map(c => [c.front, c.back]);
-                const ws = XLSX.utils.aoa_to_sheet(wsData);
-                XLSX.utils.book_append_sheet(wb, ws, sheetName);
-            }
-
-            XLSX.writeFile(wb, `wrong_${originalFileName.replace(/\.[^/.]+$/, "")}.xlsx`);
-        }
-
-        function openHowToPlay() {
-            document.getElementById('modal-container').innerHTML = `
-                <div class="modal-overlay">
-                    <div class="modal-content" style="max-width: 550px; max-height: 85vh; overflow-y: auto;">
-                        <h3>How to Play Stuex</h3>
-                        <div class="howto-step"><b>1. Importing:</b> Upload any Excel file (.xlsx) or use demo cards. Columns A & B are parsed.</div>
-                        <div class="howto-step"><b>2. Correct Answer:</b> Tap the green <b>✔</b> button, swipe left, or press the <b>Right Arrow</b>.</div>
-                        <div class="howto-step"><b>3. Wrong Answer:</b> Tap the red <b>✖</b> button, swipe right, or press the <b>Left Arrow</b>.</div>
-                        <div class="howto-step"><b>4. Flip Card:</b> Tap the card itself, click <b>↻</b>, or press <b>Enter</b> for 3D flip animation.</div>
-                        <div class="howto-step"><b>5. Undo:</b> Tap <b>↩</b> or press <b>Right Shift</b>.</div>
-                        <div class="howto-step"><b>6. Settings & Export:</b> Access settings anytime from the top bar to quit or download your wrong answers workbook.</div>
-                        <div class="modal-buttons" style="margin-top: 15px;">
-                            <button class="btn btn-primary" onclick="closeModal()">Got it!</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
     </script>
 </body>
 </html>
