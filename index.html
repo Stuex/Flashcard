@@ -102,8 +102,8 @@
                 <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
 
-            <!-- Flashcard Container (Height set to 650px on desktop) -->
-            <div id="card-touch-area" class="w-full h-[520px] sm:h-[650px] perspective-1000 cursor-pointer select-none">
+            <!-- Flashcard Container (Height strictly locked to 650px on mobile and desktop) -->
+            <div id="card-touch-area" class="w-full h-[650px] perspective-1000 cursor-pointer select-none">
                 <div id="flashcard" class="relative w-full h-full duration-500 transform-style-3d shadow-2xl rounded-3xl">
                     
                     <!-- Front Side -->
@@ -184,7 +184,7 @@
     <script>
         let cards = [];
         let currentIndex = 0;
-        let answerHistory = []; // Tracks results {cardIndex, isCorrect} for previous navigation
+        let answerHistory = [];
         let incorrectCards = new Set();
         let isFlipped = false;
         let correctCount = 0;
@@ -263,7 +263,6 @@
             correctCount = 0;
             isFlipped = false;
 
-            // Hide app header on deck view, show study view
             document.getElementById('app-header').classList.add('hidden');
             document.getElementById('upload-view').classList.add('hidden');
             document.getElementById('complete-view').classList.add('hidden');
@@ -285,13 +284,12 @@
         }
 
         function handleAnswer(isCorrect) {
-            // Record history for previous button
             answerHistory[currentIndex] = isCorrect;
 
             if (!isCorrect) {
                 incorrectCards.add(currentIndex);
             } else {
-                incorrectCards.delete(currentIndex); // clear if changed from incorrect to correct
+                incorrectCards.delete(currentIndex);
             }
 
             currentIndex++;
@@ -320,10 +318,8 @@
             document.getElementById('card-front-text').innerText = cards[currentIndex].front;
             document.getElementById('card-back-text').innerText = cards[currentIndex].back;
             
-            // Enable/disable previous button
             document.getElementById('prev-btn').disabled = (currentIndex === 0);
 
-            // Reset scroll positions to top when loading new card
             document.getElementById('front-scroll-box').scrollTop = 0;
             document.getElementById('back-scroll-box').scrollTop = 0;
 
@@ -332,7 +328,6 @@
         }
 
         function endSession() {
-            // Recalculate correct count based on final history
             correctCount = 0;
             for (let i = 0; i < cards.length; i++) {
                 if (answerHistory[i] === true) correctCount++;
@@ -373,7 +368,6 @@
         }
 
         function resetApp() {
-            // Bring back the app header when exiting study mode
             document.getElementById('app-header').classList.remove('hidden');
             document.getElementById('study-view').classList.add('hidden');
             document.getElementById('complete-view').classList.add('hidden');
@@ -401,7 +395,7 @@
             }
         });
 
-        // --- Touch & Gesture Support (Swipe & Tap) with Scroll Safety ---
+        // --- Touch & Gesture Support with Scroll Safety ---
         const cardTouchArea = document.getElementById('card-touch-area');
         let touchStartX = 0;
         let touchStartY = 0;
@@ -413,7 +407,6 @@
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
             
-            // Check if touch started inside a scrollable text area that is currently scrollable
             const activeBox = isFlipped ? document.getElementById('back-scroll-box') : document.getElementById('front-scroll-box');
             isScrollingText = activeBox.scrollHeight > activeBox.clientHeight;
         }, { passive: true });
@@ -422,12 +415,11 @@
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
             
-            // If the user was actively scrolling vertically inside long text, do not trigger swipe/flip
             const deltaY = Math.abs(touchEndY - touchStartY);
             const deltaX = Math.abs(touchEndX - touchStartX);
 
             if (isScrollingText && deltaY > deltaX && deltaY > 30) {
-                return; // Let native scroll happen
+                return;
             }
 
             handleGesture();
@@ -438,17 +430,13 @@
             const deltaY = touchEndY - touchStartY;
             const minSwipeDistance = 50;
 
-            // Horizontal Swipe Recognition
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
                 if (deltaX > 0) {
-                    // Swipe Right -> Correct
                     handleAnswer(true);
                 } else {
-                    // Swipe Left -> Incorrect
                     handleAnswer(false);
                 }
             } 
-            // Tap (minimal movement) -> Flip
             else if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
                 flipCard();
             }
@@ -456,3 +444,4 @@
     </script>
 </body>
 </html>
+
