@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -229,7 +229,7 @@ function show(dir,first){if(i>=deck.length)return finish();const c=deck[i],cd=$(
 function startTimer(){const bar=$('tbar');bar.style.display=S.timer?'block':'none';if(!S.timer)return;tStart=Date.now();
   tmr=setInterval(()=>{const p=(Date.now()-tStart)/(S.secs*1000);bar.style.transform=`scaleX(${Math.max(0,1-p)})`;if(p>=1)mark(false)},100)}
 function mark(ok){if(busy||done||!deck.length)return;busy=true;clearInterval(tmr);marks[deck[i].id]=ok;blink(ok);
-  const dir=ok?-1:1;setTimeout(()=>$('stage').animate([{opacity:1,transform:'none'},{opacity:0,transform:`translateX(${dir*110}px) rotate(${dir*4}deg)`}],{duration:240,easing:'ease-in'}).onfinish=()=>{i++;show(-dir)},560)}
+  const dir=-1;setTimeout(()=>$('stage').animate([{opacity:1,transform:'none'},{opacity:0,transform:`translateX(${dir*110}px) rotate(${dir*4}deg)`}],{duration:240,easing:'ease-in'}).onfinish=()=>{i++;show(-dir)},560)}
 function undo(){if(busy||(!i&&!done))return;if(done){done=false;$('done').hidden=true}else i--;delete marks[deck[i].id];show(-1)}
 function flip(){$('card').classList.toggle('fl')}
 function finish(){clearInterval(tmr);done=true;busy=false;const w=deck.filter(c=>marks[c.id]===false).length;
@@ -289,6 +289,4 @@ async function exportWrong(){const w=deck.filter(c=>marks[c.id]===false);if(!w.l
     if(hmax)ws.getRow(r).height=hmax*.75+6}
   const out=await wb.xlsx.writeBuffer(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/octet-stream'}));
   a.download='wrong '+fileName;a.click();toast('Excel downloaded',2000)}
-</script>
-</body>
-</html>
+</script>s
