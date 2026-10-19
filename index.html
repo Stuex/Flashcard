@@ -1,447 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlashFlow - Modern Flashcard App</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (xlsx) for Excel Import/Export -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Canvas Confetti for Completion Celebration -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-
-        /* Custom Modern Scrollbar for Long Content */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.4);
-            border-radius: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(99, 102, 241, 0.7);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stuex Flashcard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{--g:#2ee59d;--r:#ff4d6d;--b:#7aa2ff;--y:#ffd166;--line:#3a3a3a;--btn:60px}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;background:#000;color:#fff;font-family:'Outfit',system-ui,sans-serif;overflow:hidden}
+svg.i{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.page{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid #fff;outline-offset:3px}
+ 
+/* main */
+#home{justify-content:center;gap:12px;padding:24px;overflow:auto}
+.t1{font-size:15px;font-weight:300;letter-spacing:.12em;opacity:.8}
+.t2{font-size:clamp(52px,14vw,86px);font-weight:600;letter-spacing:-.03em;line-height:1;background:linear-gradient(90deg,#fff,#9fb4ff 55%,#2ee59d);-webkit-background-clip:text;background-clip:text;color:transparent;animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+.t3{font-size:13px;font-weight:300;opacity:.6;margin-bottom:22px}
+.menu{display:grid;gap:12px;width:min(340px,100%)}
+.pill{border:1px solid var(--line);background:#0a0a0a;border-radius:18px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;text-decoration:none;color:#fff;transition:transform .2s,border-color .2s,background .2s}
+.pill:hover{border-color:#888;background:#141414;transform:translateY(-2px)}
+.pill:active{transform:scale(.97)}
+.pill.main{background:#fff;color:#000;font-weight:500;justify-content:center;border-color:#fff}
+.pill.main:hover{background:#e8e8e8}
+.sw{width:44px;height:26px;border-radius:26px;background:#333;position:relative;transition:background .25s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .25s}
+.on .sw{background:var(--g)}.on .sw::after{transform:translateX(18px)}
+select{background:#000;color:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font:inherit}
+select:disabled{opacity:.35}
+.pill small{display:block;opacity:.55;font-size:12px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+ 
+/* game */
+#game{justify-content:center;gap:18px;padding:56px 10px calc(20px + env(safe-area-inset-bottom))}
+#gear{position:absolute;left:12px;top:calc(10px + env(safe-area-inset-top));width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#0a0a0a;display:grid;place-items:center;z-index:5;transition:transform .3s}
+#gear:hover{transform:rotate(90deg)}
+#smenu{position:absolute;left:12px;top:60px;background:#0d0d0d;border:1px solid var(--line);border-radius:16px;padding:6px;z-index:6;min-width:230px;animation:rise .25s both}
+#smenu button{display:block;width:100%;background:none;border:0;padding:12px 14px;text-align:left;border-radius:10px}
+#smenu button:hover{background:#1c1c1c}
+#count{position:absolute;top:calc(16px + env(safe-area-inset-top));left:0;right:0;text-align:center;font-size:13px;opacity:0;pointer-events:none;letter-spacing:.06em}
+#tbar{position:absolute;top:0;left:0;height:3px;background:var(--y);width:100%;transform-origin:left}
+#sheetf{position:absolute;top:22%;left:0;right:0;text-align:center;font-size:clamp(22px,5vw,34px);font-weight:500;opacity:0;pointer-events:none;z-index:4;text-shadow:0 0 30px #000}
+.stage{width:min(96vw,900px);height:min(650px,calc(100dvh - 170px));perspective:1600px}
+.card{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,.7,.2,1)}
+.card.fl{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);border-radius:26px;background:#050505;overflow:hidden}
+.face.back{transform:rotateY(180deg)}
+.in{height:100%;overflow-y:auto;display:flex;flex-direction:column;padding:28px;scrollbar-width:thin;scrollbar-color:#444 transparent}
+.c{margin:auto 0;width:100%}
+.t{white-space:pre-wrap;line-height:1.4;overflow-wrap:anywhere;font-weight:400}
+.c img{display:block;max-width:100%;max-height:420px;margin:14px auto 0;object-fit:contain;border-radius:10px;cursor:zoom-in}
+.in.only{padding:10px}.in.only .c{height:100%;margin:0}.in.only img{width:100%;height:100%;max-height:none;margin:0}
+.ctl{display:flex;gap:clamp(12px,4vw,26px)}
+.rb{width:var(--btn);height:var(--btn);border-radius:50%;border:1.5px solid currentColor;background:color-mix(in srgb,currentColor 10%,#000);display:grid;place-items:center;transition:transform .2s,box-shadow .3s,background .2s}
+.rb svg{width:28px;height:28px;transition:transform .3s}
+.rb:hover{box-shadow:0 0 24px color-mix(in srgb,currentColor 45%,transparent);background:color-mix(in srgb,currentColor 18%,#000)}
+.rb:hover svg{transform:scale(1.15) rotate(-6deg)}
+.rb:active{transform:scale(.88)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.88);display:grid;place-items:center;z-index:20;padding:20px;backdrop-filter:blur(6px)}
+.box{background:#0d0d0d;border:1px solid var(--line);border-radius:24px;padding:26px;width:min(440px,100%);max-height:88dvh;overflow:auto;animation:rise .35s both}
+.box h2{font-weight:500;margin-bottom:12px}
+.box li{margin:0 0 9px 18px;font-size:14px;line-height:1.45;opacity:.9}
+.row{display:flex;gap:10px;margin-top:16px}.row .pill{flex:1;justify-content:center}
+#viewer{background:#000;z-index:30;overflow:hidden;touch-action:none;padding:0;display:block}
+#viewer img{position:absolute;left:50%;top:50%;max-width:96vw;max-height:92dvh;transform-origin:center;user-select:none;cursor:grab;-webkit-user-drag:none}
+#vx{position:absolute;right:14px;top:calc(14px + env(safe-area-inset-top));width:46px;height:46px;border-radius:50%;border:1px solid #555;background:#111;display:grid;place-items:center;z-index:2}
+#toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:30px;font-size:14px;z-index:50;max-width:90vw;text-align:center}
+@media(max-width:520px){:root{--btn:54px}.in{padding:18px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
-
-    <!-- Header (Hidden during study mode) -->
-    <header id="app-header" class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-300">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-            </div>
-            <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">FlashFlow</span>
-        </div>
-        <div id="deck-stats" class="hidden text-sm font-medium text-slate-400 bg-slate-900 px-4 py-2 rounded-full border border-slate-800">
-            Card <span id="current-card-num" class="text-indigo-400 font-semibold">1</span> of <span id="total-cards-num">1</span>
-        </div>
-    </header>
-
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center items-center">
-
-        <!-- VIEW 1: UPLOAD SCREEN -->
-        <div id="upload-view" class="w-full max-w-xl text-center space-y-6 transition-all duration-500">
-            <div class="space-y-3">
-                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Master Any Subject with Ease</h1>
-                <p class="text-slate-400 text-sm sm:text-base">Upload your Excel file. We'll read <span class="text-indigo-400 font-medium">Column A</span> as the front and <span class="text-indigo-400 font-medium">Column B</span> as the back.</p>
-            </div>
-
-            <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900/40 hover:bg-slate-900/80 rounded-3xl p-10 transition-all duration-300 cursor-pointer group shadow-xl">
-                <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden">
-                <div class="flex flex-col items-center space-y-4">
-                    <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-slate-200">Click to upload or drag & drop</p>
-                        <p class="text-xs text-slate-500 mt-1">Excel sheets (.xlsx, .xls)</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pt-2 flex justify-center gap-4">
-                <button onclick="loadSampleDeck()" class="text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors">
-                    Load Sample Deck
-                </button>
-            </div>
-        </div>
-
-        <!-- VIEW 2: STUDY SCREEN -->
-        <div id="study-view" class="hidden w-full max-w-3xl flex flex-col items-center space-y-6">
-            <!-- Top Study Navigation Bar (Replaces App Header in Deck mode) -->
-            <div class="w-full flex items-center justify-between bg-slate-900/60 border border-slate-800 px-6 py-3 rounded-2xl">
-                <button onclick="prevCard()" id="prev-btn" class="flex items-center space-x-2 text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    <span>Previous Card</span>
-                </button>
-                <div class="text-xs sm:text-sm font-semibold text-slate-300">
-                    Card <span id="study-card-num" class="text-indigo-400">1</span> of <span id="study-total-num">1</span>
-                </div>
-                <button onclick="resetApp()" class="text-xs sm:text-sm font-medium text-rose-400 hover:text-rose-300 transition-colors">
-                    Quit Deck
-                </button>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
-                <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-            </div>
-
-            <!-- Flashcard Container (Height strictly locked to 650px on mobile and desktop) -->
-            <div id="card-touch-area" class="w-full h-[650px] perspective-1000 cursor-pointer select-none">
-                <div id="flashcard" class="relative w-full h-full duration-500 transform-style-3d shadow-2xl rounded-3xl">
-                    
-                    <!-- Front Side -->
-                    <div class="absolute inset-0 w-full h-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 flex flex-col justify-between backface-hidden shadow-xl">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs uppercase tracking-widest text-indigo-400 font-bold">Front (Column A)</span>
-                            <span class="text-xs text-slate-500 hidden sm:inline">Tap or Space to flip</span>
-                        </div>
-                        
-                        <!-- Scrollable Text Area (Touch scroll enabled safely) -->
-                        <div id="front-scroll-box" class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
-                            <p id="card-front-text" class="text-lg sm:text-2xl font-medium text-slate-100 leading-relaxed text-center w-full"></p>
-                        </div>
-
-                        <div class="text-center text-xs text-slate-500 flex items-center justify-between border-t border-slate-800/80 pt-3">
-                            <span>Swipe Left: Incorrect</span>
-                            <span>Swipe Right: Correct</span>
-                        </div>
-                    </div>
-
-                    <!-- Back Side -->
-                    <div class="absolute inset-0 w-full h-full bg-indigo-950/40 border border-indigo-500/30 rounded-3xl p-6 sm:p-10 flex flex-col justify-between backface-hidden rotate-y-180 shadow-xl backdrop-blur-md">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Back (Column B)</span>
-                            <span class="text-xs text-slate-500 hidden sm:inline">Tap or Space to flip back</span>
-                        </div>
-
-                        <!-- Scrollable Text Area (Touch scroll enabled safely) -->
-                        <div id="back-scroll-box" class="flex-1 my-4 overflow-y-auto custom-scrollbar flex items-center justify-center p-2">
-                            <p id="card-back-text" class="text-lg sm:text-2xl font-medium text-slate-100 leading-relaxed text-center w-full"></p>
-                        </div>
-
-                        <div class="text-center text-xs text-slate-500 border-t border-slate-800/80 pt-3">
-                            <span>Rate answer using buttons or arrow keys</span>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- Action Controls -->
-            <div id="study-controls" class="w-full grid grid-cols-2 gap-4 pt-2">
-                <button onclick="handleAnswer(false)" class="group py-4 px-6 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-semibold transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 shadow-lg shadow-rose-950/30">
-                    <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    <span>Incorrect (←)</span>
-                </button>
-                <button onclick="handleAnswer(true)" class="group py-4 px-6 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-semibold transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 shadow-lg shadow-emerald-950/30">
-                    <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span>Correct (→)</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- VIEW 3: COMPLETION SCREEN -->
-        <div id="complete-view" class="hidden w-full max-w-md text-center space-y-6 bg-slate-900/60 border border-slate-800 p-8 rounded-3xl shadow-2xl backdrop-blur-xl animate-fade-in">
-            <div class="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-3xl mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <div class="space-y-2">
-                <h2 class="text-2xl font-bold">Deck Completed!</h2>
-                <p id="completion-summary" class="text-slate-400 text-sm">You got X out of Y cards correct.</p>
-            </div>
-
-            <div class="space-y-3 pt-2">
-                <button id="export-btn" onclick="exportIncorrectExcel()" class="hidden w-full py-3.5 px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold transition-all flex items-center justify-center space-x-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    <span>Download Incorrect Cards (.xlsx)</span>
-                </button>
-                <button onclick="resetApp()" class="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-lg shadow-indigo-600/30">
-                    Study Another Deck
-                </button>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- JavaScript Application Logic -->
-    <script>
-        let cards = [];
-        let currentIndex = 0;
-        let answerHistory = [];
-        let incorrectCards = new Set();
-        let isFlipped = false;
-        let correctCount = 0;
-
-        // Drag and Drop & File Input Setup
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('excel-file-input');
-
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-500', 'bg-slate-900'); });
-        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-indigo-500', 'bg-slate-900'); });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-indigo-500', 'bg-slate-900');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-        });
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        });
-
-        function handleFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    
-                    parseCardsData(json);
-                } catch (err) {
-                    alert("Error reading Excel file. Please ensure it's a valid .xlsx or .xls file.");
-                    console.error(err);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function parseCardsData(rows) {
-            cards = [];
-            rows.forEach((row) => {
-                if (row[0] !== undefined && row[1] !== undefined && String(row[0]).trim() !== "" && String(row[1]).trim() !== "") {
-                    cards.push({ front: String(row[0]), back: String(row[1]) });
-                }
-            });
-
-            if (cards.length > 0 && (cards[0].front.toLowerCase() === 'front' || cards[0].front.toLowerCase() === 'question')) {
-                cards.shift();
-            }
-
-            if (cards.length === 0) {
-                alert("No valid cards found! Make sure Column A and Column B have content.");
-                return;
-            }
-
-            startSession();
-        }
-
-        function loadSampleDeck() {
-            cards = [
-                { front: "Capital of France", back: "Paris" },
-                { front: "What is 7 × 8?", back: "56" },
-                { 
-                    front: "Example of a long front card text: Can you explain the fundamental differences between synchronous and asynchronous execution in JavaScript programming and how the event loop handles them under the hood?", 
-                    back: "Synchronous code executes sequentially from top to bottom, blocking further execution until the current operation completes. Asynchronous code allows long-running operations (like network calls or timers) to execute in the background without blocking the main thread." 
-                },
-                { front: "Largest planet in our solar system", back: "Jupiter" }
-            ];
-            startSession();
-        }
-
-        function startSession() {
-            currentIndex = 0;
-            answerHistory = [];
-            incorrectCards = new Set();
-            correctCount = 0;
-            isFlipped = false;
-
-            document.getElementById('app-header').classList.add('hidden');
-            document.getElementById('upload-view').classList.add('hidden');
-            document.getElementById('complete-view').classList.add('hidden');
-            document.getElementById('study-view').classList.remove('hidden');
-            document.getElementById('total-cards-num').innerText = cards.length;
-            document.getElementById('study-total-num').innerText = cards.length;
-
-            updateCardDisplay();
-        }
-
-        function flipCard() {
-            const cardEl = document.getElementById('flashcard');
-            isFlipped = !isFlipped;
-            if (isFlipped) {
-                cardEl.classList.add('rotate-y-180');
-            } else {
-                cardEl.classList.remove('rotate-y-180');
-            }
-        }
-
-        function handleAnswer(isCorrect) {
-            answerHistory[currentIndex] = isCorrect;
-
-            if (!isCorrect) {
-                incorrectCards.add(currentIndex);
-            } else {
-                incorrectCards.delete(currentIndex);
-            }
-
-            currentIndex++;
-            isFlipped = false;
-            document.getElementById('flashcard').classList.remove('rotate-y-180');
-
-            if (currentIndex >= cards.length) {
-                endSession();
-            } else {
-                setTimeout(updateCardDisplay, 150);
-            }
-        }
-
-        function prevCard() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                isFlipped = false;
-                document.getElementById('flashcard').classList.remove('rotate-y-180');
-                setTimeout(updateCardDisplay, 150);
-            }
-        }
-
-        function updateCardDisplay() {
-            document.getElementById('current-card-num').innerText = currentIndex + 1;
-            document.getElementById('study-card-num').innerText = currentIndex + 1;
-            document.getElementById('card-front-text').innerText = cards[currentIndex].front;
-            document.getElementById('card-back-text').innerText = cards[currentIndex].back;
-            
-            document.getElementById('prev-btn').disabled = (currentIndex === 0);
-
-            document.getElementById('front-scroll-box').scrollTop = 0;
-            document.getElementById('back-scroll-box').scrollTop = 0;
-
-            const progress = (currentIndex / cards.length) * 100;
-            document.getElementById('progress-bar').style.width = `${progress}%`;
-        }
-
-        function endSession() {
-            correctCount = 0;
-            for (let i = 0; i < cards.length; i++) {
-                if (answerHistory[i] === true) correctCount++;
-            }
-
-            document.getElementById('study-view').classList.add('hidden');
-            document.getElementById('complete-view').classList.remove('hidden');
-
-            document.getElementById('completion-summary').innerText = `You got ${correctCount} out of ${cards.length} cards correct.`;
-
-            const exportBtn = document.getElementById('export-btn');
-            if (incorrectCards.size > 0) {
-                exportBtn.classList.remove('hidden');
-            } else {
-                exportBtn.classList.add('hidden');
-            }
-
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-        }
-
-        function exportIncorrectExcel() {
-            if (incorrectCards.size === 0) return;
-
-            const wsData = [["Front", "Back"]];
-            incorrectCards.forEach(index => {
-                wsData.push([cards[index].front, cards[index].back]);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Incorrect Cards");
-
-            XLSX.writeFile(wb, "incorrect_flashcards.xlsx");
-        }
-
-        function resetApp() {
-            document.getElementById('app-header').classList.remove('hidden');
-            document.getElementById('study-view').classList.add('hidden');
-            document.getElementById('complete-view').classList.add('hidden');
-            document.getElementById('upload-view').classList.remove('hidden');
-            fileInput.value = "";
-        }
-
-        // --- Keyboard Shortcuts ---
-        document.addEventListener('keydown', (e) => {
-            if (!document.getElementById('study-view').classList.contains('hidden')) {
-                if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
-                    e.preventDefault();
-                    flipCard();
-                } else if (e.code === 'ArrowLeft') {
-                    e.preventDefault();
-                    handleAnswer(false);
-                } else if (e.code === 'ArrowRight') {
-                    e.preventDefault();
-                    handleAnswer(true);
-                }
-            } else if (!document.getElementById('complete-view').classList.contains('hidden')) {
-                if (e.code === 'KeyR') {
-                    resetApp();
-                }
-            }
-        });
-
-        // --- Touch & Gesture Support with Scroll Safety ---
-        const cardTouchArea = document.getElementById('card-touch-area');
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        let touchEndY = 0;
-        let isScrollingText = false;
-
-        cardTouchArea.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-            
-            const activeBox = isFlipped ? document.getElementById('back-scroll-box') : document.getElementById('front-scroll-box');
-            isScrollingText = activeBox.scrollHeight > activeBox.clientHeight;
-        }, { passive: true });
-
-        cardTouchArea.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-            
-            const deltaY = Math.abs(touchEndY - touchStartY);
-            const deltaX = Math.abs(touchEndX - touchStartX);
-
-            if (isScrollingText && deltaY > deltaX && deltaY > 30) {
-                return;
-            }
-
-            handleGesture();
-        }, { passive: true });
-
-        function handleGesture() {
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const minSwipeDistance = 50;
-
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                if (deltaX > 0) {
-                    handleAnswer(true);
-                } else {
-                    handleAnswer(false);
-                }
-            } 
-            else if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
-                flipCard();
-            }
-        }
-    </script>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="up" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M1 4v6h6M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+<symbol id="flip" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</defs></svg>
+ 
+<!-- MAIN PAGE -->
+<main id="home" class="page">
+  <div class="t1">Stuex</div>
+  <div class="t2">Flashcard</div>
+  <div class="t3">By Pankaj Mehra</div>
+  <div class="menu">
+    <button class="pill main" id="bImp">Import file</button>
+    <div class="pill" id="tTimer" role="switch" aria-checked="false" tabindex="0"><span>Timer</span>
+      <select id="secs" disabled></select><span class="sw"></span></div>
+    <div class="pill" id="tRand" role="switch" aria-checked="false" tabindex="0"><span>Randomize<small>Shuffles on every import</small></span><span class="sw"></span></div>
+    <a class="pill" href="https://stuex.github.io/Revmast/" target="_blank" rel="noopener"><span>revmast<small>stuex.github.io/Revmast</small></span><span>↗</span></a>
+    <button class="pill" id="bHow">How to play</button>
+  </div>
+  <input type="file" id="file" accept=".xlsx" hidden>
+</main>
+ 
+<!-- GAME PAGE -->
+<section id="game" class="page" hidden>
+  <div id="tbar"></div>
+  <button id="gear" aria-label="Settings"><svg class="i"><use href="#set"/></svg></button>
+  <div id="smenu" hidden><button id="mQuit">Quit game</button><button id="mXls">Get excel for red button tapped flashcards</button></div>
+  <div id="count"></div><div id="sheetf"></div>
+  <div class="stage" id="stage"><div class="card" id="card">
+    <div class="face"><div class="in" id="fi"></div></div>
+    <div class="face back"><div class="in" id="bi"></div></div>
+  </div></div>
+  <div class="ctl">
+    <button class="rb" id="bU" style="color:var(--b)" aria-label="Undo"><svg class="i"><use href="#undo"/></svg></button>
+    <button class="rb" id="bD" style="color:var(--r)" aria-label="Wrong"><svg class="i"><use href="#down"/></svg></button>
+    <button class="rb" id="bF" style="color:var(--y)" aria-label="Flip card"><svg class="i"><use href="#flip"/></svg></button>
+    <button class="rb" id="bG" style="color:var(--g)" aria-label="Right"><svg class="i"><use href="#up"/></svg></button>
+  </div>
+</section>
+ 
+<!-- OVERLAYS -->
+<div class="ov" id="how" hidden><div class="box"><h2>How to play</h2><ul>
+<li>Import an .xlsx file. Column A is the front, column B is the back. Every sheet is used.</li>
+<li><b style="color:var(--g)">Thumbs up</b> = right: swipe right to left, tap it, or press →.</li>
+<li><b style="color:var(--r)">Thumbs down</b> = wrong: swipe left to right, tap it, or press ←.</li>
+<li><b style="color:var(--b)">Undo</b> = previous card: tap it or press Right Shift.</li>
+<li><b style="color:var(--y)">Flip</b>: tap the card, tap the button, or press Enter.</li>
+<li>Long text: scroll with the mouse wheel, drag up or down, or press ↑ ↓.</li>
+<li>Images: double tap or double click to open full screen (or press F). Zoom with Ctrl +/−, move with Ctrl + arrows or by dragging, close with Esc or ✕.</li>
+<li>Timer: when it runs out, the card counts as wrong.</li>
+<li>At the end, or from the settings button, download an Excel file of your wrong cards.</li></ul>
+<div class="row"><button class="pill" id="hSkip">Skip</button><button class="pill main" id="hDemo">Try demo</button></div></div></div>
+ 
+<div class="ov" id="imp" hidden><div class="box"><h2>Import from</h2><div class="menu" style="width:100%">
+<button class="pill main" id="iDrive">Google Drive</button><button class="pill" id="iLocal">This device</button><button class="pill" id="iX">Cancel</button></div></div></div>
+ 
+<div class="ov" id="done" hidden><div class="box" style="text-align:center"><h2 id="dT"></h2><p id="dS" style="opacity:.7"></p>
+<p id="dQ" style="margin-top:14px">Do you want to get excel for wrong answers?</p>
+<div class="row"><button class="pill" id="dNo">No</button><button class="pill main" id="dYes">Yes</button></div></div></div>
+ 
+<div class="ov" id="viewer" hidden><button id="vx" aria-label="Close"><svg class="i"><use href="#x"/></svg></button><img id="vimg" alt=""></div>
+<div id="toast" hidden></div>
+ 
+<script>
+/* ---- Optional: Google Drive import. Create an OAuth Web client ID + API key in Google Cloud (Drive API + Picker API) ---- */
+const GOOGLE={clientId:'',apiKey:''};
+ 
+const $=id=>document.getElementById(id), S={timer:false,secs:30,rand:false};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let deck=[],i=0,marks={},fileName='cards.xlsx',lastSheet=null,busy=false,done=false,tmr=null,tStart=0;
+ 
+/* ---------- toast / flash ---------- */
+function toast(m,ms=2600){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
+function flash(el,ms){el.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none',offset:.15},{opacity:1,offset:.85},{opacity:0}],{duration:ms})}
+function blink(ok){const c=ok?'#2ee59d':'#ff4d6d';document.querySelectorAll('.face').forEach(f=>f.animate([
+  {borderColor:'#3a3a3a',boxShadow:'0 0 0 0 transparent'},{borderColor:c,boxShadow:`0 0 26px ${c}`,offset:.25},{borderColor:'#3a3a3a',boxShadow:'0 0 0 0 transparent',offset:.5},
+  {borderColor:c,boxShadow:`0 0 26px ${c}`,offset:.75},{borderColor:c,boxShadow:`0 0 26px ${c}`}],{duration:560}))}
+ 
+/* ---------- main page ---------- */
+$('secs').innerHTML=Array.from({length:12},(_,n)=>`<option value="${(n+1)*10}"${n==2?' selected':''}>${(n+1)*10}s</option>`).join('');
+$('secs').onchange=e=>S.secs=+e.target.value;$('secs').onclick=e=>e.stopPropagation();
+function sw(id,key){const el=$(id),f=()=>{S[key]=!S[key];el.classList.toggle('on',S[key]);el.setAttribute('aria-checked',S[key]);if(key==='timer')$('secs').disabled=!S.timer};
+  el.onclick=f;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}}
+sw('tTimer','timer');sw('tRand','rand');
+$('bHow').onclick=()=>$('how').hidden=false;$('hSkip').onclick=()=>$('how').hidden=true;
+$('bImp').onclick=()=>$('imp').hidden=false;$('iX').onclick=()=>$('imp').hidden=true;
+$('iLocal').onclick=()=>$('file').click();
+$('file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;load(await f.arrayBuffer(),f.name)};
+$('iDrive').onclick=drive;
+$('hDemo').onclick=()=>{$('how').hidden=true;const m=(a,b)=>({a:{html:esc(a),im:[],len:a.length,raw:{v:a}},b:{html:esc(b),im:[],len:b.length,raw:{v:b}},sheet:'Demo'});
+  fileName='demo.xlsx';start([m('Tap this card to flip it','Right to left swipe or → means you got it right'),m('Left to right swipe or ← means wrong','Right Shift or the blue button goes back one card'),m('Long text scrolls. Try ↑ ↓ or the mouse wheel.','Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15')])};
+ 
+/* ---------- google drive ---------- */
+const loadScript=s=>new Promise((r,j)=>{const e=document.createElement('script');e.src=s;e.onload=r;e.onerror=j;document.head.append(e)});
+async function drive(){
+  if(!GOOGLE.clientId||!GOOGLE.apiKey)return toast('Add your Google clientId and apiKey at the top of the script to turn on Drive. Use "This device" for now.',5000);
+  try{await loadScript('https://accounts.google.com/gsi/client');await loadScript('https://apis.google.com/js/api.js');await new Promise(r=>gapi.load('picker',r));
+  const X='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  google.accounts.oauth2.initTokenClient({client_id:GOOGLE.clientId,scope:'https://www.googleapis.com/auth/drive.readonly',callback:t=>{if(!t.access_token)return;
+    const v=new google.picker.DocsView().setMimeTypes('application/vnd.google-apps.spreadsheet,'+X);
+    new google.picker.PickerBuilder().addView(v).setOAuthToken(t.access_token).setDeveloperKey(GOOGLE.apiKey).setCallback(async d=>{if(d.action!=='picked')return;const f=d.docs[0];
+      const u=f.mimeType.includes('google-apps')?`https://www.googleapis.com/drive/v3/files/${f.id}/export?mimeType=${X}`:`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`;
+      const rs=await fetch(u,{headers:{Authorization:'Bearer '+t.access_token}});load(await rs.arrayBuffer(),f.name.replace(/(\.xlsx)?$/,'.xlsx'))}).build().setVisible(true)}}).requestAccessToken()}
+  catch(e){toast('Could not open Google Drive')}}
+ 
+/* ---------- parsing ---------- */
+const hex=c=>c&&c.argb?'#'+c.argb.slice(-6):null;
+const dark=h=>!h||/^#0{6}$/i.test(h);
+function runs(v){if(v==null)return[];if(v.richText)return v.richText.map(t=>({t:t.text,f:t.font||null}));
+  if(typeof v==='object'&&!(v instanceof Date)){v=v.result!==undefined?v.result:v.text!==undefined?v.text:'';if(v&&v.richText)v=v.richText.map(t=>t.text).join('')}
+  if(v instanceof Date)v=v.toLocaleDateString();return[{t:String(v),f:null}]}
+function cellHtml(cell){const fl=cell.fill,hl=fl&&fl.type==='pattern'&&fl.pattern==='solid'&&hex(fl.fgColor);const bg=hl&&hl.toLowerCase()!=='#ffffff'?hl:null;let len=0;
+  const html=runs(cell.value).map(r=>{const f=r.f||cell.font||{};len+=r.t.length;const col=hex(f.color);
+    const st=[f.bold?'font-weight:700':'',f.italic?'font-style:italic':'',f.underline?'text-decoration:underline':'',
+      'color:'+(!dark(col)?col:bg?'#000':'#fff'),bg?`background:${bg};padding:0 .15em;border-radius:3px`:''].filter(Boolean).join(';');
+    return `<span style="${st}">${esc(r.t)}</span>`}).join('');return{html,len}}
+async function compress(m){
+  try{const ext=(m.extension||'png').replace('jpg','jpeg'),buf=new Uint8Array(m.buffer),MIN=350*1024;let blob=new Blob([buf],{type:'image/'+ext}),out={buf,ext};
+    const bmp=await createImageBitmap(blob),w=bmp.width,h=bmp.height;
+    if(blob.size>MIN){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(bmp,0,0);
+      for(const q of[.9,.8,.7,.6,.5,.4]){const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',q));if(!b||b.size<MIN)break;if(b.size<blob.size){blob=b;out={buf:new Uint8Array(await b.arrayBuffer()),ext:'jpeg'}}}}
+    out.w=w;out.h=h;out.url=URL.createObjectURL(new Blob([out.buf],{type:'image/'+out.ext}));return out}catch(e){return null}}
+async function parse(buf){const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);const cards=[];
+  for(const ws of wb.worksheets){const imgs={};
+    for(const im of ws.getImages()){const tl=im.range.tl,r=Math.floor(tl.nativeRow??tl.row),c=Math.floor(tl.nativeCol??tl.col);if(c>1)continue;
+      const z=await compress(wb.getImage(im.imageId));if(z)(imgs[r+','+c]=imgs[r+','+c]||[]).push(z)}
+    const side=(r,c)=>{const cell=ws.getCell(r,c+1),h=cellHtml(cell);return{html:h.html,len:h.len,im:imgs[(r-1)+','+c]||[],al:cell.alignment&&cell.alignment.horizontal,
+      raw:{v:cell.value,font:cell.font,fill:cell.fill,al:cell.alignment}}};
+    for(let r=1;r<=ws.rowCount;r++){const a=side(r,0),b=side(r,1);if(!a.len&&!b.len&&!a.im.length&&!b.im.length)continue;cards.push({a,b,sheet:ws.name})}}
+  return cards}
+async function load(buf,name){$('imp').hidden=true;toast('Importing…',60000);
+  try{const cards=await parse(buf);if(!cards.length)return toast('No filled rows found in columns A and B');fileName=name;toast('Loaded '+cards.length+' cards',1200);start(cards)}
+  catch(e){toast('Could not read this file. Use an .xlsx file.')}}
+ 
+/* ---------- game ---------- */
+function start(cards){cards.forEach((c,n)=>c.id=n);deck=cards.slice();
+  if(S.rand)for(let n=deck.length-1;n>0;n--){const j=Math.floor(Math.random()*(n+1));[deck[n],deck[j]]=[deck[j],deck[n]]}
+  i=0;marks={};lastSheet=null;done=false;$('home').hidden=true;$('imp').hidden=true;$('done').hidden=true;$('game').hidden=false;show(1,true)}
+function face(s){const im=s.im,only=!s.len&&im.length;let fs=s.len<=25?44:s.len<=60?34:s.len<=140?26:s.len<=300?20:16;if(im.length)fs=Math.max(16,Math.min(fs,22));
+  const al=['left','right','center','justify'].includes(s.al)?s.al:'center';
+  return `<div class="in${only?' only':''}"><div class="c" style="text-align:${al}">${s.len?`<div class="t" style="font-size:${fs}px">${s.html}</div>`:''}${im.map(m=>`<img src="${m.url}" alt="">`).join('')}</div></div>`}
+function show(dir,first){if(i>=deck.length)return finish();const c=deck[i],cd=$('card');clearInterval(tmr);
+  cd.style.transition='none';cd.classList.remove('fl');void cd.offsetWidth;cd.style.transition='';
+  $('fi').innerHTML=face(c.a);$('bi').innerHTML=face(c.b);$('fi').firstChild.scrollTop=0;
+  $('count').textContent=`${i+1} / ${deck.length}`;flash($('count'),2000);
+  if(c.sheet!==lastSheet){$('sheetf').textContent=c.sheet;flash($('sheetf'),1600);lastSheet=c.sheet}
+  $('stage').animate([{opacity:0,transform:`translateX(${dir*70}px) scale(.95)`},{opacity:1,transform:'none'}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});
+  busy=false;startTimer()}
+function startTimer(){const bar=$('tbar');bar.style.display=S.timer?'block':'none';if(!S.timer)return;tStart=Date.now();
+  tmr=setInterval(()=>{const p=(Date.now()-tStart)/(S.secs*1000);bar.style.transform=`scaleX(${Math.max(0,1-p)})`;if(p>=1)mark(false)},100)}
+function mark(ok){if(busy||done||!deck.length)return;busy=true;clearInterval(tmr);marks[deck[i].id]=ok;blink(ok);
+  const dir=ok?-1:1;setTimeout(()=>$('stage').animate([{opacity:1,transform:'none'},{opacity:0,transform:`translateX(${dir*110}px) rotate(${dir*4}deg)`}],{duration:240,easing:'ease-in'}).onfinish=()=>{i++;show(-dir)},560)}
+function undo(){if(busy||(!i&&!done))return;if(done){done=false;$('done').hidden=true}else i--;delete marks[deck[i].id];show(-1)}
+function flip(){$('card').classList.toggle('fl')}
+function finish(){clearInterval(tmr);done=true;busy=false;const w=deck.filter(c=>marks[c.id]===false).length;
+  $('dT').textContent=w?'Round complete':'Perfect round';$('dS').textContent=`${deck.length-w} right, ${w} wrong`;$('dQ').hidden=!w;$('dYes').hidden=!w;$('dNo').textContent=w?'No':'Back to home';$('done').hidden=false}
+function quit(){clearInterval(tmr);$('game').hidden=true;$('done').hidden=true;$('smenu').hidden=true;$('home').hidden=false}
+$('bG').onclick=()=>mark(true);$('bD').onclick=()=>mark(false);$('bU').onclick=undo;$('bF').onclick=flip;
+$('gear').onclick=()=>$('smenu').hidden=!$('smenu').hidden;$('mQuit').onclick=quit;$('mXls').onclick=()=>{$('smenu').hidden=true;exportWrong()};
+$('dNo').onclick=quit;$('dYes').onclick=async()=>{await exportWrong();quit()};
+ 
+/* ---------- card gestures ---------- */
+let sx=0,sy=0,swiped=0,lastImg=0;const stage=$('stage');
+stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+stage.addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=Date.now();mark(dx<0)}},{passive:true});
+stage.addEventListener('click',e=>{if(Date.now()-swiped<400)return;
+  if(e.target.tagName==='IMG'&&Date.now()-lastImg<320){flip();openViewer(e.target.src);lastImg=0;return}
+  if(e.target.tagName==='IMG')lastImg=Date.now();flip()});
+const vis=()=>document.querySelector(($('card').classList.contains('fl')?'#bi':'#fi')+' .in');
+ 
+/* ---------- image viewer ---------- */
+let vz=1,vx=0,vy=0;const vimg=$('vimg');
+const vApply=()=>vimg.style.transform=`translate(-50%,-50%) translate(${vx}px,${vy}px) scale(${vz})`;
+function openViewer(src){vimg.src=src;vz=1;vx=vy=0;vApply();$('viewer').hidden=false}
+const closeViewer=()=>$('viewer').hidden=true,zoom=d=>{vz=Math.min(8,Math.max(.5,vz+d));vApply()};
+$('vx').onclick=closeViewer;$('viewer').addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?.25:-.25)},{passive:false});
+let drag=null;vimg.addEventListener('pointerdown',e=>{drag={x:e.clientX-vx,y:e.clientY-vy};vimg.setPointerCapture(e.pointerId);vimg.style.cursor='grabbing'});
+vimg.addEventListener('pointermove',e=>{if(!drag)return;vx=e.clientX-drag.x;vy=e.clientY-drag.y;vApply()});
+vimg.addEventListener('pointerup',()=>{drag=null;vimg.style.cursor='grab'});
+vimg.addEventListener('dblclick',()=>{vz=1;vx=vy=0;vApply()});
+ 
+/* ---------- keyboard ---------- */
+addEventListener('keydown',e=>{
+  if(!$('viewer').hidden){const k=e.key,P=60;
+    if(k==='Escape')closeViewer();
+    else if(e.ctrlKey&&(k==='='||k==='+')){zoom(.25)}else if(e.ctrlKey&&(k==='-'||k==='_')){zoom(-.25)}
+    else if(e.ctrlKey&&k==='ArrowRight'){vx+=P;vApply()}else if(e.ctrlKey&&k==='ArrowLeft'){vx-=P;vApply()}
+    else if(e.ctrlKey&&k==='ArrowUp'){vy-=P;vApply()}else if(e.ctrlKey&&k==='ArrowDown'){vy+=P;vApply()}else return;
+    e.preventDefault();return}
+  if($('game').hidden||!$('how').hidden)return;
+  if(e.ctrlKey&&(e.key==='='||e.key==='-')){e.preventDefault();return}
+  if(e.code==='ShiftRight'){e.preventDefault();undo()}
+  else if(e.key==='ArrowRight'){e.preventDefault();mark(true)}
+  else if(e.key==='ArrowLeft'){e.preventDefault();mark(false)}
+  else if(e.key==='Enter'){e.preventDefault();flip()}
+  else if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();vis().scrollBy({top:e.key==='ArrowUp'?-90:90,behavior:'smooth'})}
+  else if(e.key==='f'||e.key==='F'){const im=vis().querySelector('img');if(im)openViewer(im.src)}
+  else if(e.key==='Escape')$('smenu').hidden=true});
+ 
+/* ---------- export wrong cards ---------- */
+async function exportWrong(){const w=deck.filter(c=>marks[c.id]===false);if(!w.length)return toast('No red button cards yet');
+  toast('Preparing excel…',60000);const wb=new ExcelJS.Workbook(),sh={};
+  for(const c of w){const o=sh[c.sheet]||(sh[c.sheet]={ws:wb.addWorksheet(c.sheet.slice(0,31)),n:0});const ws=o.ws,r=++o.n;ws.getColumn(1).width=ws.getColumn(2).width=45;let hmax=0;
+    [c.a,c.b].forEach((s,k)=>{const cell=ws.getCell(r,k+1);cell.value=s.raw.v;if(s.raw.font)cell.font=s.raw.font;if(s.raw.fill)cell.fill=s.raw.fill;
+      cell.alignment={...(s.raw.al||{}),wrapText:true,vertical:'top'};
+      s.im.forEach(m=>{const wd=Math.min(300,m.w,m.w*180/m.h),h=wd*m.h/m.w;hmax=Math.max(hmax,h);
+        ws.addImage(wb.addImage({buffer:m.buf.buffer.slice(m.buf.byteOffset,m.buf.byteOffset+m.buf.byteLength),extension:m.ext}),{tl:{col:k,row:r-1},ext:{width:wd,height:h}})})});
+    if(hmax)ws.getRow(r).height=hmax*.75+6}
+  const out=await wb.xlsx.writeBuffer(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/octet-stream'}));
+  a.download='wrong '+fileName;a.click();toast('Excel downloaded',2000)}
+</script>
 </body>
 </html>
-
