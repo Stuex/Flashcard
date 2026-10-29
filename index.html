@@ -1,359 +1,735 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#000000"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stuex Flashcard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-/* Every text in the app uses --fs (12px). Change it here if you ever need another size. */
-:root{--ok:#22c55e;--no:#ef4444;--bd:#3a3a3a;--fs:36px;--lh:1.5;
---sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);
-/* sizes scale with the shortest screen side: iPad 10th gen landscape (1180x720) and iPhone 16 portrait (393x750) both get a full-screen card */
---cb:clamp(44px,8.5vmin,62px);--m:clamp(6px,1.4vmin,12px);--r:clamp(16px,3vmin,26px);--hp:clamp(16px,4vmin,36px);
---pt:58px;--vp:calc(var(--cb) + 34px);--cardbg:#0d0d0f;--cardbd:#4d4d4d;
-font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-*{box-sizing:border-box;font-size:var(--fs)}
-html,body{margin:0;height:100%;background:#000;color:#fff;-webkit-text-size-adjust:100%}
-@supports(height:100dvh){html,body,.page{height:100dvh}}
-body{overflow:hidden;overscroll-behavior:none}button,select{font:inherit;color:inherit}
-:focus-visible{outline:2px solid #fff;outline-offset:3px}
-.page{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;padding:0 12px}
-.page.on{display:flex}
-#home{justify-content:center;gap:26px;overflow:auto;padding:24px 12px}
-.title{text-align:center;line-height:1.4}
-.title small{display:block;color:#bbb;letter-spacing:.06em}
-.title b{display:block;font-weight:700;letter-spacing:.3em;margin:8px 0}
-.btn{border:1px solid var(--bd);background:#000;border-radius:999px;padding:12px 26px;cursor:pointer;transition:border-color .2s,transform .15s}
-.btn:hover{border-color:#fff}.btn:active{transform:scale(.96)}.btn.main{background:#fff;color:#000;font-weight:600}
-.opts{display:grid;gap:12px;width:min(360px,92vw)}
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--bd);border-radius:14px;padding:11px 16px}
-.sw{appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:99px;background:#111;border:1px solid #666;position:relative;cursor:pointer;transition:.2s;flex:none}
-.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#888;transition:.2s}
-.sw:checked{border-color:#fff}.sw:checked::after{transform:translateX(20px);background:#fff}
-select{background:#000;border:1px solid var(--bd);border-radius:8px;padding:6px}select:disabled{opacity:.35}
-#err{color:#ff7b7b;min-height:1.3em;max-width:90vw;text-align:center}
-#game{padding:0}#game.on{display:block}
-#stage{position:absolute;inset:0;overflow:hidden;touch-action:pan-y;background:#000}
-/* the card fills the screen (minus safe areas + a small margin so its edge, border and snake light stay visible while it slides) */
-.card{position:absolute;top:calc(var(--sat) + var(--m));bottom:calc(var(--sab) + var(--m));left:calc(var(--sal) + var(--m));right:calc(var(--sar) + var(--m));
-border-radius:var(--r);perspective:1600px;background:var(--cardbg);will-change:transform;box-shadow:0 14px 40px rgba(0,0,0,.7)}
-.card::after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid var(--cardbd);pointer-events:none;z-index:6}
-.snk{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:7;overflow:visible}
-.flip{position:absolute;inset:0;border-radius:var(--r);transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.8,.2,1)}.card.f .flip{transform:rotateY(180deg)}
-.face{position:absolute;inset:0;border-radius:var(--r);backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;background:var(--cardbg);padding:var(--vp) var(--hp)}
-.face.ov{padding-top:var(--pt)}/* text taller than the card: start at the top, scroll */
-.face.bk{transform:rotateY(180deg)}
-.in{margin:auto 0;width:100%;line-height:var(--lh);white-space:pre-wrap;color:#fff;overflow-wrap:break-word}
-.in.c{text-align:center}.in.l{text-align:left}.face.ov .in{margin:0}
-.im{flex:1 1 0;min-height:0;width:100%;overflow:hidden;position:relative}.in+.im{min-height:55%;margin-top:12px}
-.im.z{touch-action:none;cursor:grab}
-.im img{width:100%;height:100%;object-fit:contain;transform-origin:center;user-select:none;-webkit-user-drag:none}
-.top{position:absolute;left:0;right:0;top:0;z-index:20;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;padding:calc(var(--sat) + var(--m) + 8px) calc(var(--sar) + var(--m) + 8px) 0 calc(var(--sal) + var(--m) + 8px);pointer-events:none}
-.top>*{pointer-events:auto}
-#gear,#zt button,#fsx{width:38px;height:38px;padding:0;border-radius:50%;border:1px solid var(--bd);background:rgba(0,0,0,.85);cursor:pointer;display:grid;place-items:center}
-#gear svg,#zt svg,#fsx svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-#gear{justify-self:start}
-#mid{pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:4px}
-#cnt{padding:4px 12px;border-radius:99px;border:1px solid transparent;transition:.4s}#cnt.hl{background:#fff;color:#000}#tm{color:#bbb;min-height:14px}
-#zt{justify-self:end;display:flex;gap:6px}#zt[hidden]{display:none}
-#menu{position:absolute;left:calc(var(--sal) + var(--m) + 8px);top:calc(var(--sat) + var(--m) + 54px);z-index:40;background:#000;border:1px solid var(--bd);border-radius:12px;padding:6px;display:none;min-width:210px}
-#menu.on{display:block}#menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}#menu button:hover{background:#1a1a1a}
-#sh{position:absolute;left:50%;top:calc(var(--sat) + var(--m) + var(--pt) + 4px);z-index:25;pointer-events:none;opacity:0;border:1px solid #888;background:#000;border-radius:99px;padding:6px 16px}
-#sh.on{animation:sh 1.8s ease}@keyframes sh{0%{opacity:0;transform:translate(-50%,-10px)}15%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
-#ctl{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + var(--m) + 14px);z-index:20;display:flex;gap:clamp(12px,4vw,26px)}
-.cb{width:var(--cb);height:var(--cb);border-radius:50%;border:1px solid var(--bd);background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);touch-action:manipulation;box-shadow:0 6px 18px rgba(255,255,255,.05),inset 0 1px 0 rgba(255,255,255,.12);display:grid;place-items:center;cursor:pointer;transition:transform .15s,border-color .2s;color:#fff}
-@media(max-height:520px){#ctl .cb svg{width:22px;height:22px}}
-.cb:hover{transform:translateY(-3px);border-color:#999}.cb:active{transform:scale(.9)}
-.cb svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.cb.ok{color:var(--ok)}.cb.no{color:var(--no)}
-.md{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}.md.on{display:flex}
-.box{background:#000;border:1px solid var(--bd);border-radius:18px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;padding:22px;line-height:1.5}
-.box h2{margin:0 0 10px}.box li{margin:6px 0}.acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
-.pv{border-top:1px solid #222;padding:6px 0}.warn{color:#ffcf66}
-#fs{position:fixed;inset:0;background:#000;z-index:60;display:none}#fs.on{display:block}
-#fs .im{height:100%;margin:0}#fsx{position:absolute;right:14px;top:calc(env(safe-area-inset-top) + 14px);z-index:2}
-#ts{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000;border:1px solid #888;border-radius:99px;padding:8px 18px;z-index:70;display:none}
-@media(prefers-reduced-motion:reduce){.flip{transition-duration:.01ms!important}}
-</style></head><body>
-<main id="home" class="page on">
- <h1 class="title" style="margin:0;font-weight:400"><small>Stuex</small><b>FLASHCARD</b><small>By Pankaj Mehra</small></h1>
- <button class="btn main" id="imp">Import File</button>
- <input id="file" type="file" hidden accept=".xlsx,.xls,.csv,.pdf">
- <div id="err" role="alert"></div>
- <div class="opts">
-  <label class="row">Timer <input class="sw" type="checkbox" id="tOn"></label>
-  <label class="row">Time per card <select id="tSel" disabled></select></label>
-  <label class="row">Randomize cards <input class="sw" type="checkbox" id="rnd"></label>
- </div>
- <button class="btn" id="resume" hidden>Resume last game</button>
- <button class="btn" id="how">How to Play</button>
- <p style="color:#888;max-width:340px;text-align:center;margin:0">Google Sheets: use File → Download → Excel (.xlsx) or CSV, then import it here.</p>
+:root {
+  --g: #2ee59d;
+  --r: #ff4d6d;
+  --b: #7aa2ff;
+  --y: #ffd166;
+  --line: #3a3a3a;
+  --btn: 60px;
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body {
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+svg.i {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.page { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; }
+button, select { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* MAIN PAGE */
+#home { justify-content: center; gap: 12px; padding: 24px; overflow: auto; }
+.t1 { font-size: 15px; font-weight: 300; letter-spacing: .12em; opacity: .8; }
+.t2 {
+  font-size: clamp(52px, 14vw, 86px);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  line-height: 1;
+  background: linear-gradient(90deg, #fff, #9fb4ff 55%, #2ee59d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rise .9s cubic-bezier(.2, .8, .2, 1) both;
+}
+.t3 { font-size: 13px; font-weight: 300; opacity: .6; margin-bottom: 22px; }
+.menu { display: grid; gap: 12px; width: min(340px, 100%); }
+.pill {
+  border: 1px solid var(--line);
+  background: #0a0a0a;
+  border-radius: 18px;
+  padding: 15px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  text-decoration: none;
+  color: #fff;
+  transition: transform .2s, border-color .2s, background .2s;
+}
+.pill:hover { border-color: #888; background: #141414; transform: translateY(-2px); }
+.pill:active { transform: scale(.97); }
+.pill.main { background: #fff; color: #000; font-weight: 500; justify-content: center; border-color: #fff; }
+.pill.main:hover { background: #e8e8e8; }
+.sw { width: 44px; height: 26px; border-radius: 26px; background: #333; position: relative; transition: background .25s; flex: none; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .25s; }
+.on .sw { background: var(--g); }
+.on .sw::after { transform: translateX(18px); }
+select { background: #000; color: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; font: inherit; }
+select:disabled { opacity: .35; }
+.pill small { display: block; opacity: .55; font-size: 12px; }
+#err { color: var(--r); min-height: 1.3em; max-width: 90vw; text-align: center; font-size: 14px; margin-top: 6px; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* GAME PAGE */
+#game { justify-content: center; gap: 18px; padding: 56px 10px calc(20px + env(safe-area-inset-bottom)); }
+#gear {
+  position: absolute;
+  left: 12px;
+  top: calc(10px + env(safe-area-inset-top));
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #0a0a0a;
+  display: grid;
+  place-items: center;
+  z-index: 5;
+  transition: transform .3s;
+}
+#gear:hover { transform: rotate(90deg); }
+#smenu {
+  position: absolute;
+  left: 12px;
+  top: 60px;
+  background: #0d0d0d;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 6px;
+  z-index: 6;
+  min-width: 230px;
+  animation: rise .25s both;
+}
+#smenu button { display: block; width: 100%; background: none; border: 0; padding: 12px 14px; text-align: left; border-radius: 10px; }
+#smenu button:hover { background: #1c1c1c; }
+
+#count { position: absolute; top: calc(16px + env(safe-area-inset-top)); left: 0; right: 0; text-align: center; font-size: 13px; opacity: 0; pointer-events: none; letter-spacing: .06em; }
+#tbar { position: absolute; top: 0; left: 0; height: 3px; background: var(--y); width: 100%; transform-origin: left; }
+#sheetf { position: absolute; top: 22%; left: 0; right: 0; text-align: center; font-size: clamp(22px, 5vw, 34px); font-weight: 500; opacity: 0; pointer-events: none; z-index: 4; text-shadow: 0 0 30px #000; }
+
+.stage { width: min(96vw, 900px); height: min(650px, calc(100dvh - 170px)); perspective: 1600px; position: relative; }
+.card { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3, .7, .2, 1); }
+.card.f { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid var(--line); border-radius: 26px; background: #050505; overflow: hidden; }
+.face.bk { transform: rotateY(180deg); }
+.in { height: 100%; overflow-y: auto; display: flex; flex-direction: column; padding: 28px; scrollbar-width: thin; scrollbar-color: #444 transparent; }
+.in.c { text-align: center; }
+.in.l { text-align: left; }
+.c-wrap { margin: auto 0; width: 100%; }
+.t { white-space: pre-wrap; line-height: 1.4; overflow-wrap: anywhere; font-weight: 400; font-size: 20px; }
+.im { margin-top: 14px; flex: 1 1 0; min-height: 0; width: 100%; overflow: hidden; position: relative; }
+.im img { display: block; max-width: 100%; max-height: 420px; margin: 0 auto; object-fit: contain; border-radius: 10px; cursor: zoom-in; user-select: none; -webkit-user-drag: none; }
+.face.ov .in { padding-top: 18px; }
+
+.ctl { display: flex; gap: clamp(12px, 4vw, 26px); z-index: 10; }
+.rb {
+  width: var(--btn);
+  height: var(--btn);
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, #000);
+  display: grid;
+  place-items: center;
+  transition: transform .2s, box-shadow .3s, background .2s;
+}
+.rb svg { width: 28px; height: 28px; transition: transform .3s; }
+.rb:hover { box-shadow: 0 0 24px color-mix(in srgb, currentColor 45%, transparent); background: color-mix(in srgb, currentColor 18%, #000); }
+.rb:hover svg { transform: scale(1.15) rotate(-6deg); }
+.rb:active { transform: scale(.88); }
+
+/* OVERLAYS & MODALS */
+.ov { position: fixed; inset: 0; background: rgba(0, 0, 0, .88); display: grid; place-items: center; z-index: 20; padding: 20px; backdrop-filter: blur(6px); }
+.box { background: #0d0d0d; border: 1px solid var(--line); border-radius: 24px; padding: 26px; width: min(440px, 100%); max-height: 88dvh; overflow: auto; animation: rise .35s both; }
+.box h2 { font-weight: 500; margin-bottom: 12px; }
+.box li { margin: 0 0 9px 18px; font-size: 14px; line-height: 1.45; opacity: .9; }
+.row-btn { display: flex; gap: 10px; margin-top: 16px; }
+.row-btn .pill { flex: 1; justify-content: center; }
+
+#viewer { background: #000; z-index: 30; overflow: hidden; touch-action: none; padding: 0; display: block; }
+#viewer img { position: absolute; left: 50%; top: 50%; max-width: 96vw; max-height: 92dvh; transform-origin: center; user-select: none; cursor: grab; -webkit-user-drag: none; }
+#vx { position: absolute; right: 14px; top: calc(14px + env(safe-area-inset-top)); width: 46px; height: 46px; border-radius: 50%; border: 1px solid #555; background: #111; display: grid; place-items: center; z-index: 2; }
+#toast { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 10px 18px; border-radius: 30px; font-size: 14px; z-index: 50; max-width: 90vw; text-align: center; }
+
+.pv { border-top: 1px solid #222; padding: 6px 0; font-size: 13px; }
+.warn { color: var(--y); font-size: 13px; margin-bottom: 10px; }
+
+@media(max-width: 520px) { :root { --btn: 54px; } .in { padding: 18px; } }
+@media(prefers-reduced-motion: reduce) { * { animation-duration: .01s !important; transition-duration: .01s !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="up" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M1 4v6h6M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+<symbol id="flip" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</defs></svg>
+
+<!-- MAIN PAGE -->
+<main id="home" class="page">
+  <div class="t1">Stuex</div>
+  <div class="t2">Flashcard</div>
+  <div class="t3">By Pankaj Mehra</div>
+  <div class="menu">
+    <button class="pill main" id="bImp">Import file</button>
+    <div class="pill" id="pTimer" role="switch" aria-checked="false" tabindex="0">
+      <span>Timer</span>
+      <select id="secs" disabled></select>
+      <span class="sw"></span>
+    </div>
+    <div class="pill" id="pRand" role="switch" aria-checked="false" tabindex="0">
+      <span>Randomize<small>Shuffles on every import</small></span>
+      <span class="sw"></span>
+    </div>
+    <button class="pill" id="bResume" hidden>Resume last game</button>
+    <a class="pill" href="https://stuex.github.io/Revmast/" target="_blank" rel="noopener"><span>revmast<small>stuex.github.io/Revmast</small></span><span>↗</span></a>
+    <button class="pill" id="bHow">How to play</button>
+  </div>
+  <input type="file" id="file" accept=".xlsx,.xls,.csv,.pdf" hidden>
+  <div id="err" role="alert"></div>
 </main>
-<section id="game" class="page">
- <div id="stage"></div>
- <div class="top"><button id="gear" aria-label="Settings" aria-haspopup="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-  <div id="mid"><span id="cnt" aria-live="polite"></span><span id="tm"></span></div>
-  <div id="zt" hidden><button aria-label="Zoom out" id="zo"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><button aria-label="Zoom in" id="zi"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button aria-label="Fullscreen image" id="zf"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button></div></div>
- <div id="menu"><button id="quit">Quit Game</button><button id="exp">Export Incorrect Answers</button></div><div id="sh"></div>
- <div id="ctl">
-  <button class="cb ok" id="bOk" aria-label="Correct (Right Arrow)"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
-  <button class="cb no" id="bNo" aria-label="Incorrect (Left Arrow)"><svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
-  <button class="cb" id="bUn" aria-label="Previous card (Right Shift)"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-  <button class="cb" id="bFl" aria-label="Flip card (Enter)"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
- </div></section>
-<div id="fs"><button id="fsx" aria-label="Close fullscreen"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="im" id="fsw"><img id="fsimg" alt="Fullscreen flashcard image" draggable="false"></div></div>
-<div class="md" id="hm"><div class="box" role="dialog" aria-label="How to play"><h2>How to play</h2><ul>
-<li><b>Flip:</b> tap the card, press Enter, or use the flip button.</li>
-<li><b>Correct:</b> swipe right-to-left, press →, or tap the green thumb.</li>
-<li><b>Incorrect:</b> swipe left-to-right, press ←, or tap the red thumb.</li>
-<li><b>Card change:</b> a thin light runs round the card border for half a second, then the whole card slides away.</li>
-<li><b>Previous card:</b> Undo button or Right Shift. Re-marking a card replaces its old result.</li>
-<li><b>Long text:</b> swipe, mouse wheel, or ↑ / ↓.</li>
-<li><b>Images:</b> + / − buttons or Ctrl + = / Ctrl + − to zoom; drag or Ctrl + arrows to pan; double-tap/double-click or Space for fullscreen; Esc or ✕ to close.</li>
-<li><b>Timer:</b> when on, each card gets the chosen time; if it runs out, the game moves on without recording an answer.</li>
-<li><b>Randomize:</b> shuffles cards on import; front and back stay paired.</li>
-<li><b>Export / quit:</b> the ☰ menu exports incorrect answers (Excel) or quits. You'll also be offered the export at the end.</li></ul>
-<div class="acts"><button class="btn main" id="hc">Skip / Close</button></div></div></div>
-<div class="md" id="dm"><div class="box" id="dmb" role="dialog"></div></div>
-<div id="ts" role="status"></div>
+
+<!-- GAME PAGE -->
+<section id="game" class="page" hidden>
+  <div id="tbar"></div>
+  <button id="gear" aria-label="Settings"><svg class="i"><use href="#set"/></svg></button>
+  <div id="smenu" hidden>
+    <button id="mQuit">Quit game</button>
+    <button id="mXls">Get excel for red button tapped flashcards</button>
+  </div>
+  <div id="count"></div>
+  <div id="sheetf"></div>
+  <div class="stage" id="stage"></div>
+  <div class="ctl">
+    <button class="rb" id="bU" style="color:var(--b)" aria-label="Undo"><svg class="i"><use href="#undo"/></svg></button>
+    <button class="rb" id="bD" style="color:var(--r)" aria-label="Wrong"><svg class="i"><use href="#down"/></svg></button>
+    <button class="rb" id="bF" style="color:var(--y)" aria-label="Flip card"><svg class="i"><use href="#flip"/></svg></button>
+    <button class="rb" id="bG" style="color:var(--g)" aria-label="Right"><svg class="i"><use href="#up"/></svg></button>
+  </div>
+</section>
+
+<!-- OVERLAYS -->
+<div class="ov" id="how" hidden>
+  <div class="box">
+    <h2>How to play</h2>
+    <ul>
+      <li>Import an .xlsx, .xls, .csv, or .pdf file. Column A is the front, column B is the back.</li>
+      <li><b style="color:var(--g)">Thumbs up</b> = right: swipe right to left, tap it, or press →.</li>
+      <li><b style="color:var(--r)">Thumbs down</b> = wrong: swipe left to right, tap it, or press ←.</li>
+      <li><b style="color:var(--b)">Undo</b> = previous card: tap it or press Right Shift.</li>
+      <li><b style="color:var(--y)">Flip</b>: tap the card, tap the button, or press Enter.</li>
+      <li>Long text: scroll with the mouse wheel, drag up or down, or press ↑ ↓.</li>
+      <li>Images: double tap or double click to open full screen. Zoom with Ctrl +/−, move with Ctrl + arrows or by dragging, close with Esc or ✕.</li>
+      <li>Timer: when it runs out, the game moves on to the next card.</li>
+      <li>At the end, or from the settings button, download an Excel file of your wrong cards.</li>
+    </ul>
+    <div class="row-btn"><button class="pill main" id="hSkip">Skip / Close</button></div>
+  </div>
+</div>
+
+<div class="ov" id="dm" hidden>
+  <div class="box" id="dmb"></div>
+</div>
+
+<div class="ov" id="viewer" hidden>
+  <button id="vx" aria-label="Close"><svg class="i"><use href="#x"/></svg></button>
+  <img id="vimg" alt="Fullscreen card image">
+</div>
+
+<div id="toast" hidden></div>
+
 <script>
 'use strict';
-const $=s=>document.querySelector(s),esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const S={cards:[],i:0,ans:new Map(),file:'',kind:'',sheets:[],urls:[],timer:null,left:0,prev:null,on:false,ct:0,busy:false,hist:[],bt:0};
-const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
-const cx=document.createElement('canvas').getContext('2d');
-/* ---------- helpers ---------- */
-function toast(m){const t=$('#ts');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2600)}
-const err=m=>$('#err').textContent=m||'';
-function lum(c){cx.fillStyle='#fff';cx.fillStyle=c;const h=cx.fillStyle;let r,g,b;
- if(h[0]=='#'){r=parseInt(h.substr(1,2),16);g=parseInt(h.substr(3,2),16);b=parseInt(h.substr(5,2),16)}else[r,g,b]=h.match(/[\d.]+/g).map(Number);return(.299*r+.587*g+.114*b)/255}
-const okC=c=>/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]{3,20})$/i.test((c||'').trim());
-/* ---------- flashcard creation: safe rich text (whitelist, never executes imported HTML; font sizes are ignored so all text stays 12px) ---------- */
-function wrap(t,s){if(!t)return t;let st='',c=s.c;
- if(s.h){st+='background:'+s.h+';';if(lum(s.h)>.5)c='#000'}else if(c&&lum(c)<.35)c='#fff';
- if(c)st+='color:'+c+';';if(s.b)st+='font-weight:700;';if(s.i)st+='font-style:italic;';if(s.u)st+='text-decoration:underline;';
- return st?'<span style="'+st+'">'+t+'</span>':t}
-function clean(html){const d=new DOMParser().parseFromString(html,'text/html');
- const walk=(n,st)=>{let o='';n.childNodes.forEach(c=>{
-  if(c.nodeType==3)o+=wrap(esc(c.nodeValue),st);
-  else if(c.nodeType==1){const t=c.tagName.toLowerCase();if(t=='br'){o+='\n';return}
-   if(/^(script|style|iframe|object|embed)$/.test(t))return;
-   const s={...st},y=c.style||{};
-   if(t=='b'||t=='strong'||/bold|^[6-9]00$/.test(y.fontWeight))s.b=1;
-   if(t=='i'||t=='em'||y.fontStyle=='italic')s.i=1;
-   if(t=='u'||/underline/.test(y.textDecoration||y.textDecorationLine||''))s.u=1;
-   if(okC(y.color))s.c=y.color;if(okC(y.backgroundColor))s.h=y.backgroundColor;
-   o+=walk(c,s)}});return o};
- return walk(d.body,{})}
-function cellSide(c,img){const text=c?String(c.w??c.v??''):'';
- const html=!c?'':(c.h?clean(c.h):esc(text));return{html,text,img:img||null}}
-/* ---------- spreadsheet parsing ---------- */
-async function toURL(blob,urls){let u=URL.createObjectURL(blob);urls.push(u);if(blob.size<2e6)return u;
- try{const bm=await createImageBitmap(blob),k=Math.min(1,2400/Math.max(bm.width,bm.height));if(k==1)return u;
-  const c=document.createElement('canvas');c.width=bm.width*k|0;c.height=bm.height*k|0;c.getContext('2d').drawImage(bm,0,0,c.width,c.height);
-  const nb=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(nb&&nb.size<blob.size){u=URL.createObjectURL(nb);urls.push(u)}}catch(e){}
- return u}
-async function extractImages(buf,urls){const z=await JSZip.loadAsync(buf),out={},P=new DOMParser();
- const rd=async p=>{const f=z.file(p);return f?P.parseFromString(await f.async('string'),'application/xml'):null};
- const rels=async p=>{const d=await rd(p),m={};if(d)[...d.getElementsByTagName('Relationship')].forEach(e=>m[e.getAttribute('Id')]=e.getAttribute('Target'));return m};
- const res=(base,t)=>{if(t[0]=='/')return t.slice(1);const a=base.split('/');a.pop();t.split('/').forEach(s=>s=='..'?a.pop():a.push(s));return a.join('/')};
- const rp=p=>p.replace(/([^/]+)$/,'_rels/$1.rels');
- const wb=await rd('xl/workbook.xml'),wr=await rels('xl/_rels/workbook.xml.rels');if(!wb)return out;
- for(const s of wb.getElementsByTagName('sheet')){
-  const name=s.getAttribute('name'),sp=res('xl/workbook.xml',wr[s.getAttribute('r:id')]||'');
-  for(const t of Object.values(await rels(rp(sp)))){if(!/drawings\/[^/]*\.xml$/.test(t))continue;
-   const dp=res(sp,t),dd=await rd(dp),dr=await rels(rp(dp));if(!dd)continue;
-   for(const a of [...dd.getElementsByTagName('xdr:twoCellAnchor'),...dd.getElementsByTagName('xdr:oneCellAnchor')]){
-    const fr=a.getElementsByTagName('xdr:from')[0],bl=a.getElementsByTagName('a:blip')[0];if(!fr||!bl)continue;
-    const col=+fr.getElementsByTagName('xdr:col')[0].textContent,row=+fr.getElementsByTagName('xdr:row')[0].textContent,tg=dr[bl.getAttribute('r:embed')];
-    if(!tg||col>1)continue;const f=z.file(res(dp,tg)),ext=(tg.split('.').pop()||'').toLowerCase().replace('jpg','jpeg');
-    if(!f||!/^(png|jpeg|gif|webp|bmp)$/.test(ext))continue;
-    out[name+'|'+row+'|'+col]=await toURL(new Blob([await f.async('arraybuffer')],{type:'image/'+ext}),urls)}}}
- return out}
-async function parseXlsx(buf,name,urls){
- const wb=XLSX.read(buf,{type:'array',cellHTML:true,cellStyles:true});let im={};
- try{im=await extractImages(buf,urls)}catch(e){console.warn('Image extraction failed',e)}
- const cards=[];
- wb.SheetNames.forEach(sn=>{const ws=wb.Sheets[sn];if(!ws||!ws['!ref'])return;const r=XLSX.utils.decode_range(ws['!ref']);
-  for(let R=r.s.r;R<=r.e.r;R++){const side=C=>cellSide(ws[XLSX.utils.encode_cell({r:R,c:C})],im[sn+'|'+R+'|'+C]);
-   const f=side(0),b=side(1);if(!(f.text.trim()||f.img||b.text.trim()||b.img))continue;
-   cards.push({id:name+'|'+sn+'|'+(R+1),sheet:sn,row:R+1,front:f,back:b})}});
- return{cards,sheets:wb.SheetNames}}
-/* ---------- PDF processing (pink = front, yellow = back; uses highlight annotations) ---------- */
-function hlKind(c){if(!c||c.length<3)return null;const[r,g,b]=[...c].map(v=>v/255),mx=Math.max(r,g,b),d=mx-Math.min(r,g,b);if(d<.08)return null;
- let h=60*(mx==r?((g-b)/d+6)%6:mx==g?(b-r)/d+2:(r-g)/d+4);
- if(h>=40&&h<=70&&g>.6)return'y';if((h>=290||h<=10)&&r>.6&&(g+b)/2>.25)return'p';return null}
-function quads(a){const q=a.quadPoints,o=[];if(q&&q.length){const f=q.flat?q.flat():q;
- if(typeof f[0]=='object')for(let i=0;i+3<f.length;i+=4){const s=f.slice(i,i+4),x=s.map(p=>p.x),y=s.map(p=>p.y);o.push([Math.min(...x),Math.min(...y),Math.max(...x),Math.max(...y)])}
- else for(let i=0;i+7<f.length;i+=8){const x=[0,2,4,6].map(k=>f[i+k]),y=[1,3,5,7].map(k=>f[i+k]);o.push([Math.min(...x),Math.min(...y),Math.max(...x),Math.max(...y)])}}
- return o.length?o:[a.rect]}
-async function parsePdf(buf,name){
- pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
- const pdf=await pdfjsLib.getDocument({data:buf}).promise,seg=[];let text=false,anyHl=false;
- for(let p=1;p<=pdf.numPages;p++){const pg=await pdf.getPage(p),an=(await pg.getAnnotations()).filter(a=>a.subtype=='Highlight'),
-  tc=(await pg.getTextContent()).items.filter(i=>i.str&&i.str.trim());if(tc.length)text=true;
-  for(const a of an){anyHl=true;const k=hlKind(a.color);if(!k)continue;
-   const rs=quads(a).sort((a,b)=>b[3]-a[3]||a[0]-b[0]),parts=[];
-   for(const[x1,y1,x2,y2]of rs)tc.filter(it=>it.width>0).map(it=>{const e=it.transform[4],f=it.transform[5],h=it.height||10;
-    if(f+h*.35<y1-2||f+h*.35>y2+2)return null;const a0=Math.max(e,x1),a1=Math.min(e+it.width,x2);if(a1<=a0)return null;
-    const n=it.str.length;return{x:e,s:it.str.slice(Math.round((a0-e)/it.width*n),Math.round((a1-e)/it.width*n))}}).filter(Boolean).sort((a,b)=>a.x-b.x).forEach(o=>parts.push(o.s));
-   const t=parts.join(' ').replace(/\s+/g,' ').trim();
-   seg.push({k,t,p,y:rs[0][3],x:rs[0][0]})}}
- if(!anyHl)return{cards:[],empty:text?'No highlight annotations found. Flattened or scanned PDFs need OCR, which this build does not include.':'This PDF looks scanned (no selectable text or highlights). OCR is not included in this build.'};
- seg.sort((a,b)=>a.p-b.p||b.y-a.y||a.x-b.x);
- const warn=[];seg.filter(s=>!s.t).forEach(s=>warn.push('Page '+s.p+': a '+(s.k=='p'?'pink':'yellow')+' highlight had no readable text and was skipped.'));
- const P=seg.filter(s=>s.k=='p'&&s.t),Y=seg.filter(s=>s.k=='y'&&s.t),cards=[];
- for(let i=0;i<Math.min(P.length,Y.length);i++)cards.push({id:name+'|PDF|'+(i+1),sheet:'PDF',row:i+1,front:{html:esc(P[i].t),text:P[i].t,img:null},back:{html:esc(Y[i].t),text:Y[i].t,img:null}});
- P.slice(Y.length).forEach(s=>warn.push('Unmatched pink (front) on page '+s.p+': '+s.t));Y.slice(P.length).forEach(s=>warn.push('Unmatched yellow (back) on page '+s.p+': '+s.t));
- return{cards,sheets:['PDF'],warn,empty:'No pink/yellow pairs were found.'}}
-/* ---------- file importing ---------- */
-async function importFile(f){err('');if(!f)return;const m=f.name.match(/\.(xlsx|xls|csv|pdf)$/i);
- if(!m)return err('Unsupported file type. Choose .xlsx, .xls, .csv or .pdf.');if(!f.size)return err('The file is empty.');
- const pdf=/pdf/i.test(m[1]),urls=[];
- if(pdf?!window.pdfjsLib:!(window.XLSX&&window.JSZip))return err('Required libraries did not load. Check your internet connection (they come from cdnjs.cloudflare.com).');
- $('#imp').disabled=true;$('#imp').textContent='Importing…';
- try{const buf=await f.arrayBuffer(),r=pdf?await parsePdf(buf,f.name):await parseXlsx(buf,f.name,urls);
-  if(!r.cards.length)throw new Error(r.empty||'No flashcards found. Put the front in column A and the back in column B.');
-  if(pdf)preview(r,f.name);else begin(r.cards,f.name,'xlsx',r.sheets,urls)}
- catch(e){urls.forEach(u=>URL.revokeObjectURL(u));err('Could not process this file: '+(e.message||e))}
- finally{$('#imp').disabled=false;$('#imp').textContent='Import File'}}
-function preview(r,name){ask('<h2>PDF preview</h2><p>'+r.cards.length+' flashcard(s) found.</p>'+(r.warn&&r.warn.length?'<div class="warn">'+r.warn.map(esc).join('<br>')+'</div>':'')+
- r.cards.map(c=>'<div class="pv">'+esc(c.front.text)+' → <b>'+esc(c.back.text)+'</b></div>').join(''),
- [['Cancel'],['Start game',()=>begin(r.cards,name,'pdf',['PDF'],[]),1]])}
-/* ---------- game setup ---------- */
-function begin(cards,name,kind,sheets,urls){S.urls.forEach(u=>URL.revokeObjectURL(u));S.urls=urls;
- cards=cards.slice();if($('#rnd').checked)for(let i=cards.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[cards[i],cards[j]]=[cards[j],cards[i]]}
- Object.assign(S,{cards,i:0,ans:new Map(),file:name,kind,sheets,prev:null,on:true,busy:false,hist:[],multi:sheets.length>1});
- $('#home').classList.remove('on');$('#game').classList.add('on');$('#resume').hidden=true;render(0)}
-/* ---------- rendering ---------- */
-/* Text is always 12px (CSS --fs). fit() only decides alignment:
-   1 line            -> centred horizontally + vertically
-   several lines     -> left aligned, centred vertically
-   taller than card  -> left aligned, starts at the top, scrolls */
-function face(side,cls){let o='';
- if(side.html||!side.img)o+='<div class="in l">'+(side.html||'<span style="color:#777">(empty)</span>')+'</div>';
- if(side.img)o+='<div class="im"><img alt="Flashcard image" draggable="false" src="'+side.img+'"></div>';
- return'<div class="face '+cls+'">'+o+'</div>'}
-function fit(f){const el=f.querySelector('.in');if(!el||!f.clientHeight)return;
- f.classList.remove('ov');el.className='in l';
- const lh=parseFloat(getComputedStyle(el).lineHeight)||18,lines=Math.round(el.offsetHeight/lh),over=f.scrollHeight>f.clientHeight+1;
- f.classList.toggle('ov',over);el.className='in '+(!over&&lines<=1?'c':'l');f.scrollTop=0}
-let rt=0;const refit=()=>document.querySelectorAll('#card .face').forEach(fit);
-/* ---------- card animations: border snake (0.5s) -> full card slide ---------- */
-const NS='http://www.w3.org/2000/svg',SNAKE_MS=500,SLIDE_MS=450,SW=1.5,COL={c:'#22c55e',w:'#ef4444'},
- AXIS='X';/* slide direction: 'X' = sideways (follows the swipe), 'Y' = up/down */
-function snake(card,kind){return new Promise(done=>{
- if(!card){done();return}
- const w=card.clientWidth,h=card.clientHeight,o=SW/2,rw=w-SW,rh=h-SW,
-  r=Math.min(parseFloat(getComputedStyle(card).borderTopLeftRadius)||0,w/2,h/2),rr=Math.max(r-o,0),
-  P=2*(rw+rh)-8*rr+2*Math.PI*rr,L=Math.min(P*.3,420),col=COL[kind]||'#fff',
-  lay=[[L,.28],[L*.75,.28],[L*.5,.28],[L*.28,.28],[L*.12,.4],[6,1,'#fff']],/* stacked dashes: faint tail -> bright head */
-  svg=document.createElementNS(NS,'svg');
- svg.setAttribute('class','snk');svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.style.filter='drop-shadow(0 0 2px '+col+')';
- const els=lay.map(([len,op,c])=>{const e=document.createElementNS(NS,'rect');
-  Object.entries({x:o,y:o,width:rw,height:rh,rx:rr,fill:'none',stroke:c||col,'stroke-width':SW,'stroke-opacity':op,'stroke-linecap':'round','stroke-dasharray':len+' '+(P+len+20),'stroke-dashoffset':len}).forEach(([k,v])=>e.setAttribute(k,v));
-  svg.append(e);return{e,len}});
- card.append(svg);const t0=performance.now(),T=P+L;
- (function f(now){const k=Math.min(1,(now-t0)/SNAKE_MS),hd=k*T;
-  els.forEach(x=>x.e.setAttribute('stroke-dashoffset',x.len-hd));
-  if(k<1)requestAnimationFrame(f);else{svg.remove();done()}})(t0)})}
-function slide(old,nu,s){/* s = direction the old card leaves (-1 left/up, +1 right/down); the whole card moves, not just its text */
- const st=$('#stage'),W=AXIS=='X'?st.clientWidth:st.clientHeight,tr=v=>'translate'+AXIS+'('+v+'px)',o={duration:SLIDE_MS,easing:'cubic-bezier(.22,1,.36,1)'};
- if(!old.animate){old.remove();return}
- nu.animate([{transform:tr(-s*W)},{transform:tr(0)}],o);
- old.animate([{transform:tr(0)},{transform:tr(s*W)}],{...o,fill:'forwards'});
- setTimeout(()=>old.remove(),SLIDE_MS+40)}
-function render(s){const c=S.cards[S.i],stage=$('#stage'),old=$('#card');
- stage.querySelectorAll('.card').forEach(e=>{if(e!==old)e.remove()});
- const nu=document.createElement('div');nu.className='card';nu.id='card';
- nu.innerHTML='<div class="flip">'+face(c.front,'fr')+face(c.back,'bk')+'</div>';
- if(old)old.removeAttribute('id');stage.append(nu);
- nu.querySelectorAll('.im img').forEach(i=>i._s={z:1,x:0,y:0});nu.querySelectorAll('.face').forEach(fit);
- if(old){if(s)slide(old,nu,s);else old.remove()}
- $('#cnt').textContent=(S.i+1)+' / '+S.cards.length;const k=$('#cnt');k.classList.add('hl');clearTimeout(S.ct);S.ct=setTimeout(()=>k.classList.remove('hl'),2000);
- if(S.multi&&S.prev!==c.sheet){const x=$('#sh');x.textContent=c.sheet;x.classList.remove('on');void x.offsetWidth;x.classList.add('on')}
- S.prev=c.sheet;updZt();startTimer()}
-/* ---------- navigation & answers ---------- */
-const modalOpen=()=>!!document.querySelector('.md.on'),fsOpen=()=>$('#fs').classList.contains('on');
-async function mark(k){if(!S.on||S.busy||modalOpen()||fsOpen())return;S.busy=true;stopTimer();
- S.ans.set(S.cards[S.i].id,k);if(navigator.vibrate)navigator.vibrate(k=='c'?12:[10,40,10]);
- await snake($('#card'),k);/* 0.5s border light first, only then the slide */
- if(!S.on){S.busy=false;return}
- step(1,k=='c'?-1:1)}
-function step(d,s){if(!S.on)return;if(d>0&&S.i>=S.cards.length-1){S.busy=false;finish();return}
- if(d<0&&S.i==0){toast('This is the first card');return}
- if(d>0)S.hist.push(s);S.i+=d;S.busy=true;render(s);clearTimeout(S.bt);S.bt=setTimeout(()=>S.busy=false,SLIDE_MS+40)}
-function undo(){if(!S.on||S.busy||modalOpen()||fsOpen())return;step(-1,-(S.hist.length?S.hist.pop():-1))}
-function flip(){if(!S.on||S.busy||modalOpen()||fsOpen())return;$('#card').classList.toggle('f');updZt()}
-function finish(){stopTimer();const n=S.cards.length,v=[...S.ans.values()],c=v.filter(x=>x=='c').length,w=v.filter(x=>x=='w').length,
- sum='<p>✔ '+c+' correct &nbsp;·&nbsp; ✘ '+w+' incorrect &nbsp;·&nbsp; '+Math.max(0,n-c-w)+' skipped</p>';
- if(!w)ask('<h2>Game complete</h2>'+sum+'<p>No incorrect answers to export.</p>',[['Back to home',home,1]]);
- else ask('<h2>Game complete</h2>'+sum+'<p>Would you like to download an Excel file containing your incorrect answers?</p>',[['No',home],['Yes',()=>{exportWrong();home()},1]])}
-function home(){stopTimer();S.on=false;S.busy=false;$('#game').classList.remove('on');$('#home').classList.add('on');$('#resume').hidden=!S.cards.length}
-/* ---------- timer ---------- */
-function stopTimer(){clearInterval(S.timer);S.timer=null;$('#tm').textContent=''}
-function startTimer(){stopTimer();if(!$('#tOn').checked)return;S.left=+$('#tSel').value;$('#tm').textContent='⏱ '+S.left+'s';
- S.timer=setInterval(()=>{if(modalOpen()||S.busy)return;S.left--;$('#tm').textContent='⏱ '+S.left+'s';if(S.left<=0){stopTimer();step(1,-1)}},1000)}
-/* ---------- image interaction ---------- */
-const curFace=()=>$('#card .face.'+($('#card').classList.contains('f')?'bk':'fr')),
- curImg=()=>fsOpen()?$('#fsimg'):(curFace()||0)&&curFace().querySelector('.im img');
-function ap(i){const s=i._s;i.style.transform='translate('+s.x+'px,'+s.y+'px) scale('+s.z+')'}
-function clampP(i){const s=i._s,w=i.parentElement,mx=(s.z-1)*w.clientWidth/2,my=(s.z-1)*w.clientHeight/2;
- s.x=Math.max(-mx,Math.min(mx,s.x));s.y=Math.max(-my,Math.min(my,s.y));if(s.z<=1)s.x=s.y=0;w.classList.toggle('z',s.z>1);ap(i)}
-const zoom=(i,d)=>{if(!i)return;i._s.z=Math.min(6,Math.max(1,+(i._s.z+d).toFixed(2)));clampP(i)};
-const pan=(i,dx,dy)=>{if(!i||i._s.z<=1)return;i._s.x+=dx;i._s.y+=dy;clampP(i)};
-function openFs(i){const f=$('#fsimg');f.src=i.src;f._s={z:1,x:0,y:0};ap(f);$('#fsw').classList.remove('z');$('#fs').classList.add('on')}
-function closeFs(){$('#fs').classList.remove('on')}
-function updZt(){const f=curFace();$('#zt').hidden=!(f&&f.querySelector('.im'))}
-/* ---------- touch / pointer gestures ---------- */
-let g=null,tp=0,tt=0;
-function tap(im){if(!im){flip();return}const n=Date.now();if(n-tp<320){clearTimeout(tt);tp=0;openFs(im)}else{tp=n;tt=setTimeout(flip,320)}}
-function bindGestures(){const st=$('#stage');
- st.addEventListener('pointerdown',e=>{if(e.target.closest('#zt'))return;const im=e.target.closest('.im img');g={x:e.clientX,y:e.clientY,px:e.clientX,py:e.clientY,moved:0,im,pan:!!(im&&im._s.z>1)}});
- st.addEventListener('pointermove',e=>{if(!g)return;g.moved=Math.max(g.moved,Math.hypot(e.clientX-g.x,e.clientY-g.y));if(g.pan)pan(g.im,e.clientX-g.px,e.clientY-g.py);g.px=e.clientX;g.py=e.clientY});
- st.addEventListener('pointerup',e=>{if(!g)return;const d=g,dx=e.clientX-d.x,dy=e.clientY-d.y;g=null;
-  if(d.pan&&d.moved>8)return;if(d.moved<10){tap(d.im);return}
-  if(e.pointerType=='touch'&&!d.pan&&Math.abs(dx)>60&&Math.abs(dx)>1.5*Math.abs(dy))mark(dx<0?'c':'w')});
- st.addEventListener('pointercancel',()=>g=null);
- st.addEventListener('wheel',e=>{if(e.ctrlKey&&curImg()){e.preventDefault();zoom(curImg(),e.deltaY<0?.3:-.3)}},{passive:false});
- const fw=$('#fsw');let fd=null;fw.addEventListener('pointerdown',e=>fd={x:e.clientX,y:e.clientY});
- fw.addEventListener('pointermove',e=>{if(fd){pan($('#fsimg'),e.clientX-fd.x,e.clientY-fd.y);fd={x:e.clientX,y:e.clientY}}});
- fw.addEventListener('pointerup',()=>fd=null);fw.addEventListener('wheel',e=>{e.preventDefault();zoom($('#fsimg'),e.deltaY<0?.3:-.3)},{passive:false})}
-/* ---------- keyboard ---------- */
-function onKey(e){const t=e.target;if(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable)return;const k=e.key,hit=()=>e.preventDefault();
- if(k=='Escape'){if(fsOpen())closeFs();else{$('#menu').classList.remove('on');document.querySelectorAll('.md.on').forEach(m=>m.classList.remove('on'))}return}
- if(!S.on||modalOpen())return;const im=curImg();
- if(e.ctrlKey||e.metaKey){if(!im)return;
-  if(k=='='||k=='+'){hit();zoom(im,.5)}else if(k=='-'||k=='_'){hit();zoom(im,-.5)}
-  else if(k.startsWith('Arrow')&&im._s.z>1){hit();pan(im,k=='ArrowRight'?60:k=='ArrowLeft'?-60:0,k=='ArrowDown'?60:k=='ArrowUp'?-60:0)}return}
- if(fsOpen())return;
- if(k==' '){if(im&&!t.closest('button')){hit();openFs(im)}return}
- if(k=='Enter'){if(t.closest('button,a,summary'))return;hit();flip();return}
- if(k=='ArrowUp'||k=='ArrowDown'){const f=curFace();if(f&&f.scrollHeight>f.clientHeight){hit();f.scrollBy({top:k=='ArrowUp'?-90:90,behavior:reduced?'auto':'smooth'})}return}
- if(k=='ArrowRight'){hit();mark('c')}else if(k=='ArrowLeft'){hit();mark('w')}else if(e.code=='ShiftRight'){hit();undo()}}
-/* ---------- Excel export (SheetJS community build writes values only, no cell styles/images) ---------- */
-function exportWrong(){const w=S.cards.filter(c=>S.ans.get(c.id)=='w');if(!w.length){toast('No incorrect answers to export');return}
- const wb=XLSX.utils.book_new(),U=XLSX.utils;
- if(S.kind=='xlsx'){const by={};w.forEach(c=>(by[c.sheet]=by[c.sheet]||[]).push(c));
-  S.sheets.forEach(sn=>{if(by[sn])U.book_append_sheet(wb,U.aoa_to_sheet(by[sn].sort((a,b)=>a.row-b.row).map(c=>[c.front.text,c.back.text])),sn.slice(0,31))})}
- else U.book_append_sheet(wb,U.aoa_to_sheet([['Front','Back','Status'],...w.map(c=>[c.front.text,c.back.text,'Incorrect'])]),'Flashcards');
- XLSX.writeFile(wb,'wrong_'+S.file.replace(/\.[^./\\]+$/,'')+'.xlsx')}
-/* ---------- dialogs ---------- */
-function ask(html,btns){const b=$('#dmb');b.innerHTML=html+'<div class="acts"></div>';const a=b.lastChild;
- btns.forEach(([l,f,p])=>{const x=document.createElement('button');x.className='btn'+(p?' main':'');x.textContent=l;x.onclick=()=>{$('#dm').classList.remove('on');f&&f()};a.append(x)});
- $('#dm').classList.add('on');a.lastChild.focus()}
-/* ---------- init (listeners bound once) ---------- */
-(function(){const sel=$('#tSel');for(let s=10;s<=120;s+=10)sel.add(new Option(s+' seconds',s));sel.value=30;
- $('#tOn').onchange=e=>sel.disabled=!e.target.checked;
- $('#imp').onclick=()=>$('#file').click();$('#file').onchange=e=>{importFile(e.target.files[0]);e.target.value=''};
- $('#how').onclick=()=>$('#hm').classList.add('on');$('#hc').onclick=()=>$('#hm').classList.remove('on');
- $('#resume').onclick=()=>{S.on=true;S.busy=false;$('#home').classList.remove('on');$('#game').classList.add('on');$('#resume').hidden=true;render(0)};
- $('#bOk').onclick=()=>mark('c');$('#bNo').onclick=()=>mark('w');$('#bUn').onclick=undo;$('#bFl').onclick=flip;
- $('#gear').onclick=e=>{e.stopPropagation();$('#menu').classList.toggle('on')};document.addEventListener('click',()=>$('#menu').classList.remove('on'));
- $('#quit').onclick=()=>ask('<h2>Quit game?</h2><p>Your answers are kept. You can resume from the main page until you import another file.</p>',[['Stay'],['Quit game',home,1]]);
- $('#exp').onclick=exportWrong;
- $('#zi').onclick=()=>zoom(curImg(),.5);$('#zo').onclick=()=>zoom(curImg(),-.5);$('#zf').onclick=()=>{const i=curImg();i&&openFs(i)};$('#fsx').onclick=closeFs;
- bindGestures();document.addEventListener('keydown',onKey);new ResizeObserver(()=>{clearTimeout(rt);rt=setTimeout(refit,60)}).observe($('#stage'));
- addEventListener('beforeunload',()=>S.urls.forEach(u=>URL.revokeObjectURL(u)))})();
-</script></body></html>
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const S = { cards: [], i: 0, ans: new Map(), file: '', kind: '', sheets: [], urls: [], timer: null, left: 0, prev: null, on: false, ct: 0, busy: false, hist: [], bt: 0, rand: false, useTimer: false, secs: 30 };
+const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
+const cx = document.createElement('canvas').getContext('2d');
+
+/* ---------- UI Helpers & Animations ---------- */
+function toast(m, ms = 2600) {
+  const t = $('toast');
+  t.textContent = m;
+  t.hidden = false;
+  clearTimeout(toast.h);
+  toast.h = setTimeout(() => t.hidden = true, ms);
+}
+const err = m => $('err').textContent = m || '';
+
+function flash(el, ms) {
+  if(!el) return;
+  el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none', offset: .15 }, { opacity: 1, offset: .85 }, { opacity: 0 }], { duration: ms });
+}
+
+function blink(ok) {
+  const c = ok ? '#2ee59d' : '#ff4d6d';
+  document.querySelectorAll('.face').forEach(f => f.animate([
+    { borderColor: '#3a3a3a', boxShadow: '0 0 0 0 transparent' },
+    { borderColor: c, boxShadow: `0 0 26px ${c}`, offset: .25 },
+    { borderColor: '#3a3a3a', boxShadow: '0 0 0 0 transparent', offset: .5 },
+    { borderColor: c, boxShadow: `0 0 26px ${c}`, offset: .75 },
+    { borderColor: c, boxShadow: `0 0 26px ${c}` }
+  ], { duration: 560 }));
+}
+
+function lum(c) {
+  cx.fillStyle = '#fff'; cx.fillStyle = c;
+  const h = cx.fillStyle; let r, g, b;
+  if (h[0] == '#') { r = parseInt(h.substr(1, 2), 16); g = parseInt(h.substr(3, 2), 16); b = parseInt(h.substr(5, 2), 16); }
+  else [r, g, b] = h.match(/[\d.]+/g).map(Number);
+  return (.299 * r + .587 * g + .114 * b) / 255;
+}
+const okC = c => /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]{3,20})$/i.test((c || '').trim());
+
+/* ---------- HTML Clean / Cell side ---------- */
+function wrap(t, s) {
+  if (!t) return t; let st = '', c = s.c;
+  if (s.h) { st += 'background:' + s.h + ';'; if (lum(s.h) > .5) c = '#000'; } else if (c && lum(c) < .35) c = '#fff';
+  if (c) st += 'color:' + c + ';'; if (s.b) st += 'font-weight:700;'; if (s.i) st += 'font-style:italic;'; if (s.u) st += 'text-decoration:underline;';
+  return st ? '<span style="' + st + '">' + t + '</span>' : t;
+}
+
+function clean(html) {
+  const d = new DOMParser().parseFromString(html, 'text/html');
+  const walk = (n, st) => {
+    let o = '';
+    n.childNodes.forEach(c => {
+      if (c.nodeType == 3) o += wrap(esc(c.nodeValue), st);
+      else if (c.nodeType == 1) {
+        const t = c.tagName.toLowerCase();
+        if (t == 'br') { o += '\n'; return; }
+        if (/^(script|style|iframe|object|embed)$/.test(t)) return;
+        const s = { ...st }, y = c.style || {};
+        if (t == 'b' || t == 'strong' || /bold|^[6-9]00$/.test(y.fontWeight)) s.b = 1;
+        if (t == 'i' || t == 'em' || y.fontStyle == 'italic') s.i = 1;
+        if (t == 'u' || /underline/.test(y.textDecoration || y.textDecorationLine || '')) s.u = 1;
+        if (okC(y.color)) s.c = y.color; if (okC(y.backgroundColor)) s.h = y.backgroundColor;
+        o += walk(c, s);
+      }
+    });
+    return o;
+  };
+  return walk(d.body, {});
+}
+
+function cellSide(c, img) {
+  const text = c ? String(c.w ?? c.v ?? '') : '';
+  const html = !c ? '' : (c.h ? clean(c.h) : esc(text));
+  return { html, text, img: img || null };
+}
+
+/* ---------- Parsing Excel & PDF ---------- */
+async function toURL(blob, urls) {
+  let u = URL.createObjectURL(blob); urls.push(u); if (blob.size < 2e6) return u;
+  try {
+    const bm = await createImageBitmap(blob), k = Math.min(1, 2400 / Math.max(bm.width, bm.height));
+    if (k == 1) return u;
+    const c = document.createElement('canvas'); c.width = bm.width * k | 0; c.height = bm.height * k | 0;
+    c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+    const nb = await new Promise(r => c.toBlob(r, 'image/jpeg', .92));
+    if (nb && nb.size < blob.size) { u = URL.createObjectURL(nb); urls.push(u); }
+  } catch (e) { }
+  return u;
+}
+
+async function extractImages(buf, urls) {
+  const z = await JSZip.loadAsync(buf), out = {}, P = new DOMParser();
+  const rd = async p => { const f = z.file(p); return f ? P.parseFromString(await f.async('string'), 'application/xml') : null; };
+  const rels = async p => { const d = await rd(p), m = {}; if (d) [...d.getElementsByTagName('Relationship')].forEach(e => m[e.getAttribute('Id')] = e.getAttribute('Target')); return m; };
+  const res = (base, t) => { if (t[0] == '/') return t.slice(1); const a = base.split('/'); a.pop(); t.split('/').forEach(s => s == '..' ? a.pop() : a.push(s)); return a.join('/'); };
+  const rp = p => p.replace(/([^/]+)$/, '_rels/$1.rels');
+  const wb = await rd('xl/workbook.xml'), wr = await rels('xl/_rels/workbook.xml.rels'); if (!wb) return out;
+  for (const s of wb.getElementsByTagName('sheet')) {
+    const name = s.getAttribute('name'), sp = res('xl/workbook.xml', wr[s.getAttribute('r:id')] || '');
+    for (const t of Object.values(await rels(rp(sp)))) {
+      if (!/drawings\/[^/]*\.xml$/.test(t)) continue;
+      const dp = res(sp, t), dd = await rd(dp), dr = await rels(rp(dp)); if (!dd) continue;
+      for (const a of [...dd.getElementsByTagName('xdr:twoCellAnchor'), ...dd.getElementsByTagName('xdr:oneCellAnchor')]) {
+        const fr = a.getElementsByTagName('xdr:from')[0], bl = a.getElementsByTagName('a:blip')[0]; if (!fr || !bl) continue;
+        const col = +fr.getElementsByTagName('xdr:col')[0].textContent, row = +fr.getElementsByTagName('xdr:row')[0].textContent, tg = dr[bl.getAttribute('r:embed')];
+        if (!tg || col > 1) continue;
+        const f = z.file(res(dp, tg)), ext = (tg.split('.').pop() || '').toLowerCase().replace('jpg', 'jpeg');
+        if (!f || !/^(png|jpeg|gif|webp|bmp)$/.test(ext)) continue;
+        out[name + '|' + row + '|' + col] = await toURL(new Blob([await f.async('arraybuffer')], { type: 'image/' + ext }), urls);
+      }
+    }
+  }
+  return out;
+}
+
+async function parseXlsx(buf, name, urls) {
+  const wb = XLSX.read(buf, { type: 'array', cellHTML: true, cellStyles: true }); let im = {};
+  try { im = await extractImages(buf, urls); } catch (e) { console.warn('Image extraction failed', e); }
+  const cards = [];
+  wb.SheetNames.forEach(sn => {
+    const ws = wb.Sheets[sn]; if (!ws || !ws['!ref']) return; const r = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = r.s.r; R <= r.e.r; R++) {
+      const side = C => cellSide(ws[XLSX.utils.encode_cell({ r: R, c: C })], im[sn + '|' + R + '|' + C]);
+      const f = side(0), b = side(1); if (!(f.text.trim() || f.img || b.text.trim() || b.img)) continue;
+      cards.push({ id: name + '|' + sn + '|' + (R + 1), sheet: sn, row: R + 1, front: f, back: b });
+    }
+  });
+  return { cards, sheets: wb.SheetNames };
+}
+
+function hlKind(c) {
+  if (!c || c.length < 3) return null; const [r, g, b] = [...c].map(v => v / 255), mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+  if (d < .08) return null;
+  let h = 60 * (mx == r ? ((g - b) / d + 6) % 6 : mx == g ? (b - r) / d + 2 : (r - g) / d + 4);
+  if (h >= 40 && h <= 70 && g > .6) return 'y'; if ((h >= 290 || h <= 10) && r > .6 && (g + b) / 2 > .25) return 'p'; return null;
+}
+
+function quads(a) {
+  const q = a.quadPoints, o = []; if (q && q.length) {
+    const f = q.flat ? q.flat() : q;
+    if (typeof f[0] == 'object') for (let i = 0; i + 3 < f.length; i += 4) { const s = f.slice(i, i + 4), x = s.map(p => p.x), y = s.map(p => p.y); o.push([Math.min(...x), Math.min(...y), Math.max(...x), Math.max(...y)]); }
+    else for (let i = 0; i + 7 < f.length; i += 8) { const x = [0, 2, 4, 6].map(k => f[i + k]), y = [1, 3, 5, 7].map(k => f[i + k]); o.push([Math.min(...x), Math.min(...y), Math.max(...x), Math.max(...y)]); }
+  }
+  return o.length ? o : [a.rect];
+}
+
+async function parsePdf(buf, name) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise, seg = []; let text = false, anyHl = false;
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const pg = await pdf.getPage(p), an = (await pg.getAnnotations()).filter(a => a.subtype == 'Highlight'),
+      tc = (await pg.getTextContent()).items.filter(i => i.str && i.str.trim()); if (tc.length) text = true;
+    for (const a of an) {
+      anyHl = true; const k = hlKind(a.color); if (!k) continue;
+      const rs = quads(a).sort((a, b) => b[3] - a[3] || a[0] - b[0]), parts = [];
+      for (const [x1, y1, x2, y2] of rs) tc.filter(it => it.width > 0).map(it => {
+        const e = it.transform[4], f = it.transform[5], h = it.height || 10;
+        if (f + h * .35 < y1 - 2 || f + h * .35 > y2 + 2) return null; const a0 = Math.max(e, x1), a1 = Math.min(e + it.width, x2); if (a1 <= a0) return null;
+        const n = it.str.length; return { x: e, s: it.str.slice(Math.round((a0 - e) / it.width * n), Math.round((a1 - e) / it.width * n)) };
+      }).filter(Boolean).sort((a, b) => a.x - b.x).forEach(o => parts.push(o.s));
+      const t = parts.join(' ').replace(/\s+/g, ' ').trim();
+      seg.push({ k, t, p, y: rs[0][3], x: rs[0][0] });
+    }
+  }
+  if (!anyHl) return { cards: [], empty: text ? 'No highlight annotations found.' : 'This PDF looks scanned. OCR is not included in this build.' };
+  seg.sort((a, b) => a.p - b.p || b.y - a.y || a.x - b.x);
+  const warn = []; seg.filter(s => !s.t).forEach(s => warn.push('Page ' + s.p + ': a ' + (s.k == 'p' ? 'pink' : 'yellow') + ' highlight had no readable text and was skipped.'));
+  const P = seg.filter(s => s.k == 'p' && s.t), Y = seg.filter(s => s.k == 'y' && s.t), cards = [];
+  for (let i = 0; i < Math.min(P.length, Y.length); i++) cards.push({ id: name + '|PDF|' + (i + 1), sheet: 'PDF', row: i + 1, front: { html: esc(P[i].t), text: P[i].t, img: null }, back: { html: esc(Y[i].t), text: Y[i].t, img: null } });
+  P.slice(Y.length).forEach(s => warn.push('Unmatched pink (front) on page ' + s.p + ': ' + s.t)); Y.slice(P.length).forEach(s => warn.push('Unmatched yellow (back) on page ' + s.p + ': ' + s.t));
+  return { cards, sheets: ['PDF'], warn, empty: 'No pink/yellow pairs were found.' };
+}
+
+/* ---------- File Importing & Flow ---------- */
+async function importFile(f) {
+  err(''); if (!f) return; const m = f.name.match(/\.(xlsx|xls|csv|pdf)$/i);
+  if (!m) return err('Unsupported file type. Choose .xlsx, .xls, .csv or .pdf.'); if (!f.size) return err('The file is empty.');
+  const pdf = /pdf/i.test(m[1]), urls = [];
+  if (pdf ? !window.pdfjsLib : !(window.XLSX && window.JSZip)) return err('Required libraries did not load.');
+  toast('Importing…', 60000);
+  try {
+    const buf = await f.arrayBuffer(), r = pdf ? await parsePdf(buf, f.name) : await parseXlsx(buf, f.name, urls);
+    if (!r.cards.length) throw new Error(r.empty || 'No flashcards found.');
+    if (pdf) preview(r, f.name); else begin(r.cards, f.name, 'xlsx', r.sheets, urls);
+  }
+  catch (e) { urls.forEach(u => URL.revokeObjectURL(u)); err('Could not process file: ' + (e.message || e)); }
+}
+
+function preview(r, name) {
+  ask('<h2>PDF preview</h2><p>' + r.cards.length + ' flashcard(s) found.</p>' + (r.warn && r.warn.length ? '<div class="warn">' + r.warn.map(esc).join('<br>') + '</div>' : '') +
+    r.cards.map(c => '<div class="pv">' + esc(c.front.text) + ' → <b>' + esc(c.back.text) + '</b></div>').join(''),
+    [['Cancel'], ['Start game', () => begin(r.cards, name, 'pdf', ['PDF'], []), 1]]);
+}
+
+function begin(cards, name, kind, sheets, urls) {
+  S.urls.forEach(u => URL.revokeObjectURL(u)); S.urls = urls;
+  cards = cards.slice();
+  if (S.rand) for (let i = cards.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [cards[i], cards[j]] = [cards[j], cards[i]]; }
+  Object.assign(S, { cards, i: 0, ans: new Map(), file: name, kind, sheets, prev: null, on: true, busy: false, hist: [], multi: sheets.length > 1 });
+  $('home').hidden = true; $('game').hidden = false; $('bResume').hidden = true;
+  toast('Loaded ' + cards.length + ' cards', 1200);
+  render(0);
+}
+
+/* ---------- UI Rendering & Display ---------- */
+function face(side, cls) {
+  let o = '';
+  const hasText = !!side.html;
+  if (hasText || !side.img) o += '<div class="t">' + (side.html || '<span style="color:#777">(empty)</span>') + '</div>';
+  if (side.img) o += '<div class="im"><img alt="Flashcard image" draggable="false" src="' + side.img + '"></div>';
+  return '<div class="face ' + cls + '"><div class="in"><div class="c-wrap">' + o + '</div></div></div>';
+}
+
+function fit(f) {
+  const el = f.querySelector('.in'); if (!el || !f.clientHeight) return;
+  f.classList.remove('ov');
+  const over = f.scrollHeight > f.clientHeight + 1;
+  f.classList.toggle('ov', over);
+  f.scrollTop = 0;
+}
+
+let rt = 0;
+const refit = () => document.querySelectorAll('#card .face').forEach(fit);
+
+function render(s) {
+  const c = S.cards[S.i], stage = $('stage'), old = $('card');
+  stage.querySelectorAll('.card').forEach(e => { if (e !== old) e.remove(); });
+  const nu = document.createElement('div'); nu.className = 'card'; nu.id = 'card';
+  nu.innerHTML = face(c.front, 'fr') + face(c.back, 'bk');
+  if (old) old.removeAttribute('id');
+  stage.append(nu);
+
+  nu.querySelectorAll('.im img').forEach(i => i._s = { z: 1, x: 0, y: 0 });
+  nu.querySelectorAll('.face').forEach(fit);
+
+  if (old) {
+    if (s) {
+      const W = stage.clientWidth, tr = v => 'translateX(' + v + 'px)';
+      nu.animate([{ opacity: 0, transform: tr(-s * 70) + ' scale(.95)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      old.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: tr(s * 110) + ' rotate(' + (s * 4) + 'deg)' }], { duration: 240, easing: 'ease-in' });
+      setTimeout(() => old.remove(), 250);
+    } else old.remove();
+  }
+
+  $('count').textContent = (S.i + 1) + ' / ' + S.cards.length;
+  flash($('count'), 2000);
+
+  if (S.multi && S.prev !== c.sheet) {
+    $('sheetf').textContent = c.sheet;
+    flash($('sheetf'), 1600);
+  }
+  S.prev = c.sheet;
+  startTimer();
+}
+
+/* ---------- Actions & Logic ---------- */
+const modalOpen = () => !$('dm').hidden || !$('how').hidden, fsOpen = () => !$('viewer').hidden;
+
+function mark(ok) {
+  if (!S.on || S.busy || modalOpen() || fsOpen()) return;
+  S.busy = true; stopTimer();
+  S.ans.set(S.cards[S.i].id, ok ? 'c' : 'w');
+  blink(ok);
+  setTimeout(() => {
+    if (!S.on) { S.busy = false; return; }
+    step(1, ok ? -1 : 1);
+  }, 560);
+}
+
+function step(d, s) {
+  if (!S.on) return;
+  if (d > 0 && S.i >= S.cards.length - 1) { S.busy = false; finish(); return; }
+  if (d < 0 && S.i == 0) { toast('This is the first card'); S.busy = false; return; }
+  if (d > 0) S.hist.push(s);
+  S.i += d;
+  render(s);
+  clearTimeout(S.bt);
+  S.bt = setTimeout(() => S.busy = false, 380);
+}
+
+function undo() {
+  if (!S.on || S.busy || modalOpen() || fsOpen()) return;
+  step(-1, -(S.hist.length ? S.hist.pop() : -1));
+}
+
+function flip() {
+  if (!S.on || S.busy || modalOpen() || fsOpen()) return;
+  $('card').classList.toggle('f');
+}
+
+function finish() {
+  stopTimer();
+  const n = S.cards.length, v = [...S.ans.values()], c = v.filter(x => x == 'c').length, w = v.filter(x => x == 'w').length;
+  const sum = '<p style="opacity:.7;margin-bottom:12px">' + c + ' right, ' + w + ' wrong</p>';
+  if (!w) ask('<h2>Round complete</h2>' + sum, [['Back to home', home, 1]]);
+  else ask('<h2>Round complete</h2>' + sum + '<p>Do you want to get excel for wrong answers?</p>', [['No', home], ['Yes', async () => { await exportWrong(); home(); }, 1]]);
+}
+
+function home() {
+  stopTimer(); S.on = false; S.busy = false;
+  $('game').hidden = true; $('smenu').hidden = true; $('home').hidden = false;
+  $('bResume').hidden = !S.cards.length;
+}
+
+/* ---------- Timer ---------- */
+function stopTimer() { clearInterval(S.timer); S.timer = null; $('tbar').style.transform = 'scaleX(0)'; }
+function startTimer() {
+  stopTimer();
+  if (!S.useTimer) { $('tbar').style.display = 'none'; return; }
+  $('tbar').style.display = 'block';
+  let tStart = Date.now();
+  S.timer = setInterval(() => {
+    if (modalOpen() || S.busy) return;
+    let p = (Date.now() - tStart) / (S.secs * 1000);
+    $('tbar').style.transform = `scaleX(${Math.max(0, 1 - p)})`;
+    if (p >= 1) { stopTimer(); step(1, -1); }
+  }, 100);
+}
+
+/* ---------- Image Viewer & Interactions ---------- */
+const curFace = () => $('card') && $('card').querySelector('.face.' + ($('card').classList.contains('f') ? 'bk' : 'fr')),
+  curImg = () => fsOpen() ? $('vimg') : (curFace() || 0) && curFace().querySelector('.im img');
+
+let vz = 1, vx = 0, vy = 0;
+const vimg = $('vimg');
+const vApply = () => vimg.style.transform = `translate(-50%,-50%) translate(${vx}px,${vy}px) scale(${vz})`;
+
+function openViewer(src) { vimg.src = src; vz = 1; vx = vy = 0; vApply(); $('viewer').hidden = false; }
+const closeViewer = () => $('viewer').hidden = true, zoom = d => { vz = Math.min(8, Math.max(.5, vz + d)); vApply(); };
+
+/* ---------- Gestures & Binding ---------- */
+let sx = 0, sy = 0, swiped = 0, lastImg = 0;
+function bindGestures() {
+  const stage = $('stage');
+  stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  stage.addEventListener('touchend', e => {
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = Date.now(); mark(dx < 0); }
+  }, { passive: true });
+
+  stage.addEventListener('click', e => {
+    if (Date.now() - swiped < 400) return;
+    if (e.target.tagName === 'IMG' && Date.now() - lastImg < 320) { flip(); openViewer(e.target.src); lastImg = 0; return; }
+    if (e.target.tagName === 'IMG') lastImg = Date.now();
+    flip();
+  });
+
+  $('vx').onclick = closeViewer;
+  $('viewer').addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY < 0 ? .25 : -.25); }, { passive: false });
+
+  let drag = null;
+  vimg.addEventListener('pointerdown', e => { drag = { x: e.clientX - vx, y: e.clientY - vy }; vimg.setPointerCapture(e.pointerId); vimg.style.cursor = 'grabbing'; });
+  vimg.addEventListener('pointermove', e => { if (!drag) return; vx = e.clientX - drag.x; vy = e.clientY - drag.y; vApply(); });
+  vimg.addEventListener('pointerup', () => { drag = null; vimg.style.cursor = 'grab'; });
+  vimg.addEventListener('dblclick', () => { vz = 1; vx = vy = 0; vApply(); });
+}
+
+/* ---------- Keyboard Support ---------- */
+function onKey(e) {
+  if (!$('viewer').hidden) {
+    const k = e.key, P = 60;
+    if (k === 'Escape') closeViewer();
+    else if (e.ctrlKey && (k === '=' || k === '+')) zoom(.25);
+    else if (e.ctrlKey && (k === '-' || k === '_')) zoom(-.25);
+    else if (e.ctrlKey && k === 'ArrowRight') { vx += P; vApply(); }
+    else if (e.ctrlKey && k === 'ArrowLeft') { vx -= P; vApply(); }
+    else if (e.ctrlKey && k === 'ArrowUp') { vy -= P; vApply(); }
+    else if (e.ctrlKey && k === 'ArrowDown') { vy += P; vApply(); }
+    else return;
+    e.preventDefault(); return;
+  }
+  if ($('game').hidden || !$('how').hidden) return;
+  if (e.ctrlKey && (e.key === '=' || e.key === '-')) { e.preventDefault(); return; }
+  if (e.code === 'ShiftRight') { e.preventDefault(); undo(); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); mark(true); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); mark(false); }
+  else if (e.key === 'Enter') { e.preventDefault(); flip(); }
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    const vis = curFace() ? curFace().querySelector('.in') : null;
+    if (vis) { e.preventDefault(); vis.scrollBy({ top: e.key === 'ArrowUp' ? -90 : 90, behavior: 'smooth' }); }
+  }
+  else if (e.key === 'f' || e.key === 'F') { const im = curImg(); if (im) openViewer(im.src); }
+  else if (e.key === 'Escape') $('smenu').hidden = true;
+}
+
+/* ---------- Export Incorrect Cards ---------- */
+async function exportWrong() {
+  const w = S.cards.filter(c => S.ans.get(c.id) == 'w');
+  if (!w.length) return toast('No red button cards yet');
+  toast('Preparing excel…', 60000);
+  const wb = XLSX.utils.book_new(), U = XLSX.utils;
+  if (S.kind == 'xlsx') {
+    const by = {}; w.forEach(c => (by[c.sheet] = by[c.sheet] || []).push(c));
+    S.sheets.forEach(sn => { if (by[sn]) U.book_append_sheet(wb, U.aoa_to_sheet(by[sn].sort((a,b) => a.row - b.row).map(c => [c.front.text, c.back.text])), sn.slice(0, 31)); });
+  } else {
+    U.book_append_sheet(wb, U.aoa_to_sheet([['Front', 'Back', 'Status'], ...w.map(c => [c.front.text, c.back.text, 'Incorrect'])]), 'Flashcards');
+  }
+  XLSX.writeFile(wb, 'wrong_' + S.file.replace(/\.[^./\\]+$/, '') + '.xlsx');
+  toast('Excel downloaded', 2000);
+}
+
+/* ---------- Dialog Modal ---------- */
+function ask(html, btns) {
+  const b = $('dmb'); b.innerHTML = html + '<div class="row-btn"></div>';
+  const a = b.lastChild;
+  btns.forEach(([l, f, p]) => {
+    const x = document.createElement('button');
+    x.className = 'pill' + (p ? ' main' : '');
+    x.textContent = l;
+    x.onclick = () => { $('dm').hidden = true; f && f(); };
+    a.append(x);
+  });
+  $('dm').hidden = false;
+}
+
+/* ---------- Setup & Initialization ---------- */
+(function () {
+  const sel = $('secs');
+  for (let s = 10; s <= 120; s += 10) sel.add(new Option(s + 's', s));
+  sel.value = 30;
+
+  function bindSw(pillId, key, onToggle) {
+    const el = $(pillId);
+    const f = () => {
+      S[key] = !S[key];
+      el.classList.toggle('on', S[key]);
+      el.setAttribute('aria-checked', S[key]);
+      if (onToggle) onToggle(S[key]);
+    };
+    el.onclick = f;
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); f(); } };
+  }
+
+  bindSw('pTimer', 'useTimer', active => sel.disabled = !active);
+  bindSw('pRand', 'rand');
+
+  sel.onchange = e => S.secs = +e.target.value;
+  sel.onclick = e => e.stopPropagation();
+
+  $('bImp').onclick = () => $('file').click();
+  $('file').onchange = e => { importFile(e.target.files[0]); e.target.value = ''; };
+
+  $('bHow').onclick = () => $('how').hidden = false;
+  $('hSkip').onclick = () => $('how').hidden = true;
+
+  $('bResume').onclick = () => {
+    S.on = true; S.busy = false;
+    $('home').hidden = true; $('game').hidden = false; $('bResume').hidden = true;
+    render(0);
+  };
+
+  $('bG').onclick = () => mark(true);
+  $('bD').onclick = () => mark(false);
+  $('bU').onclick = undo;
+  $('bF').onclick = flip;
+
+  $('gear').onclick = e => { e.stopPropagation(); $('smenu').hidden = !$('smenu').hidden; };
+  document.addEventListener('click', () => $('smenu').hidden = true);
+
+  $('mQuit').onclick = () => ask('<h2>Quit game?</h2><p style="opacity:.7">Your answers are kept. You can resume anytime from home.</p>', [['Stay'], ['Quit game', home, 1]]);
+  $('mXls').onclick = () => { $('smenu').hidden = true; exportWrong(); };
+
+  bindGestures();
+  document.addEventListener('keydown', onKey);
+  new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(refit, 60); }).observe($('stage'));
+  addEventListener('beforeunload', () => S.urls.forEach(u => URL.revokeObjectURL(u)));
+})();
+</script>
+</body>
+</html>
