@@ -5,177 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stuex Flashcard</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
-:root {
-  --g: #2ee59d;
-  --r: #ff4d6d;
-  --b: #7aa2ff;
-  --y: #ffd166;
-  --line: #3a3a3a;
-  --btn: 60px;
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
-  --sar: env(safe-area-inset-right, 0px);
-}
-* { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
-[hidden] { display: none !important; }
-html, body {
-  height: 100%;
-  background: #000;
-  color: #fff;
-  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
-  overflow: hidden;
-}
-svg.i {
-  width: 26px;
-  height: 26px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.page { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; }
-button, select { font: inherit; color: inherit; cursor: pointer; }
-:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-
-/* MAIN PAGE */
-#home { justify-content: center; gap: 12px; padding: 24px; overflow: auto; }
-.t1 { font-size: 15px; font-weight: 300; letter-spacing: .12em; opacity: .8; }
-.t2 {
-  font-size: clamp(52px, 14vw, 86px);
-  font-weight: 600;
-  letter-spacing: -.03em;
-  line-height: 1;
-  background: linear-gradient(90deg, #fff, #9fb4ff 55%, #2ee59d);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: rise .9s cubic-bezier(.2, .8, .2, 1) both;
-}
-.t3 { font-size: 13px; font-weight: 300; opacity: .6; margin-bottom: 22px; }
-.menu { display: grid; gap: 12px; width: min(340px, 100%); }
-.pill {
-  border: 1px solid var(--line);
-  background: #0a0a0a;
-  border-radius: 18px;
-  padding: 15px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  text-decoration: none;
-  color: #fff;
-  transition: transform .2s, border-color .2s, background .2s;
-}
-.pill:hover { border-color: #888; background: #141414; transform: translateY(-2px); }
-.pill:active { transform: scale(.97); }
-.pill.main { background: #fff; color: #000; font-weight: 500; justify-content: center; border-color: #fff; }
-.pill.main:hover { background: #e8e8e8; }
-.sw { width: 44px; height: 26px; border-radius: 26px; background: #333; position: relative; transition: background .25s; flex: none; }
-.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .25s; }
-.on .sw { background: var(--g); }
-.on .sw::after { transform: translateX(18px); }
-select { background: #000; color: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; font: inherit; }
-select:disabled { opacity: .35; }
-.pill small { display: block; opacity: .55; font-size: 12px; }
-#err { color: var(--r); min-height: 1.3em; max-width: 90vw; text-align: center; font-size: 14px; margin-top: 6px; }
-
-@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-
-/* GAME PAGE */
-#game { justify-content: center; gap: 18px; padding: 56px 10px calc(20px + env(safe-area-inset-bottom)); }
-#gear {
-  position: absolute;
-  left: 12px;
-  top: calc(10px + env(safe-area-inset-top));
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: #0a0a0a;
-  display: grid;
-  place-items: center;
-  z-index: 5;
-  transition: transform .3s;
-}
-#gear:hover { transform: rotate(90deg); }
-#smenu {
-  position: absolute;
-  left: 12px;
-  top: 60px;
-  background: #0d0d0d;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 6px;
-  z-index: 6;
-  min-width: 230px;
-  animation: rise .25s both;
-}
-#smenu button { display: block; width: 100%; background: none; border: 0; padding: 12px 14px; text-align: left; border-radius: 10px; }
-#smenu button:hover { background: #1c1c1c; }
-
-#count { position: absolute; top: calc(16px + env(safe-area-inset-top)); left: 0; right: 0; text-align: center; font-size: 13px; opacity: 0; pointer-events: none; letter-spacing: .06em; }
-#tbar { position: absolute; top: 0; left: 0; height: 3px; background: var(--y); width: 100%; transform-origin: left; }
-#sheetf { position: absolute; top: 22%; left: 0; right: 0; text-align: center; font-size: clamp(22px, 5vw, 34px); font-weight: 500; opacity: 0; pointer-events: none; z-index: 4; text-shadow: 0 0 30px #000; }
-
-.stage { width: min(96vw, 900px); height: min(650px, calc(100dvh - 170px)); perspective: 1600px; position: relative; }
-.card { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3, .7, .2, 1); }
-.card.f { transform: rotateY(180deg); }
-.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid var(--line); border-radius: 26px; background: #050505; overflow: hidden; }
-.face.bk { transform: rotateY(180deg); }
-.in { height: 100%; overflow-y: auto; display: flex; flex-direction: column; padding: 28px; scrollbar-width: thin; scrollbar-color: #444 transparent; }
-.in.c { text-align: center; }
-.in.l { text-align: left; }
-.c-wrap { margin: auto 0; width: 100%; }
-.t { white-space: pre-wrap; line-height: 1.4; overflow-wrap: anywhere; font-weight: 400; font-size: 20px; }
-.im { margin-top: 14px; flex: 1 1 0; min-height: 0; width: 100%; overflow: hidden; position: relative; }
-.im img { display: block; max-width: 100%; max-height: 420px; margin: 0 auto; object-fit: contain; border-radius: 10px; cursor: zoom-in; user-select: none; -webkit-user-drag: none; }
-.face.ov .in { padding-top: 18px; }
-
-.ctl { display: flex; gap: clamp(12px, 4vw, 26px); z-index: 10; }
-.rb {
-  width: var(--btn);
-  height: var(--btn);
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  background: color-mix(in srgb, currentColor 10%, #000);
-  display: grid;
-  place-items: center;
-  transition: transform .2s, box-shadow .3s, background .2s;
-}
-.rb svg { width: 28px; height: 28px; transition: transform .3s; }
-.rb:hover { box-shadow: 0 0 24px color-mix(in srgb, currentColor 45%, transparent); background: color-mix(in srgb, currentColor 18%, #000); }
-.rb:hover svg { transform: scale(1.15) rotate(-6deg); }
-.rb:active { transform: scale(.88); }
-
-/* OVERLAYS & MODALS */
-.ov { position: fixed; inset: 0; background: rgba(0, 0, 0, .88); display: grid; place-items: center; z-index: 20; padding: 20px; backdrop-filter: blur(6px); }
-.box { background: #0d0d0d; border: 1px solid var(--line); border-radius: 24px; padding: 26px; width: min(440px, 100%); max-height: 88dvh; overflow: auto; animation: rise .35s both; }
-.box h2 { font-weight: 500; margin-bottom: 12px; }
-.box li { margin: 0 0 9px 18px; font-size: 14px; line-height: 1.45; opacity: .9; }
-.row-btn { display: flex; gap: 10px; margin-top: 16px; }
-.row-btn .pill { flex: 1; justify-content: center; }
-
-#viewer { background: #000; z-index: 30; overflow: hidden; touch-action: none; padding: 0; display: block; }
-#viewer img { position: absolute; left: 50%; top: 50%; max-width: 96vw; max-height: 92dvh; transform-origin: center; user-select: none; cursor: grab; -webkit-user-drag: none; }
-#vx { position: absolute; right: 14px; top: calc(14px + env(safe-area-inset-top)); width: 46px; height: 46px; border-radius: 50%; border: 1px solid #555; background: #111; display: grid; place-items: center; z-index: 2; }
-#toast { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 10px 18px; border-radius: 30px; font-size: 14px; z-index: 50; max-width: 90vw; text-align: center; }
-
-.pv { border-top: 1px solid #222; padding: 6px 0; font-size: 13px; }
-.warn { color: var(--y); font-size: 13px; margin-bottom: 10px; }
-
-@media(max-width: 520px) { :root { --btn: 54px; } .in { padding: 18px; } }
-@media(prefers-reduced-motion: reduce) { * { animation-duration: .01s !important; transition-duration: .01s !important; } }
+:root{--g:#2ee59d;--r:#ff4d6d;--b:#7aa2ff;--y:#ffd166;--line:#3a3a3a;--btn:60px}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;background:#000;color:#fff;font-family:'Outfit',system-ui,sans-serif;overflow:hidden}
+svg.i{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.page{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid #fff;outline-offset:3px}
+ 
+/* main */
+#home{justify-content:center;gap:12px;padding:24px;overflow:auto}
+.t1{font-size:15px;font-weight:300;letter-spacing:.12em;opacity:.8}
+.t2{font-size:clamp(52px,14vw,86px);font-weight:600;letter-spacing:-.03em;line-height:1;background:linear-gradient(90deg,#fff,#9fb4ff 55%,#2ee59d);-webkit-background-clip:text;background-clip:text;color:transparent;animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+.t3{font-size:13px;font-weight:300;opacity:.6;margin-bottom:22px}
+.menu{display:grid;gap:12px;width:min(340px,100%)}
+.pill{border:1px solid var(--line);background:#0a0a0a;border-radius:18px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;text-decoration:none;color:#fff;transition:transform .2s,border-color .2s,background .2s}
+.pill:hover{border-color:#888;background:#141414;transform:translateY(-2px)}
+.pill:active{transform:scale(.97)}
+.pill.main{background:#fff;color:#000;font-weight:500;justify-content:center;border-color:#fff}
+.pill.main:hover{background:#e8e8e8}
+.sw{width:44px;height:26px;border-radius:26px;background:#333;position:relative;transition:background .25s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .25s}
+.on .sw{background:var(--g)}.on .sw::after{transform:translateX(18px)}
+select{background:#000;color:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font:inherit}
+select:disabled{opacity:.35}
+.pill small{display:block;opacity:.55;font-size:12px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+ 
+/* game */
+#game{justify-content:center;gap:18px;padding:56px 10px calc(20px + env(safe-area-inset-bottom))}
+#gear{position:absolute;left:12px;top:calc(10px + env(safe-area-inset-top));width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#0a0a0a;display:grid;place-items:center;z-index:5;transition:transform .3s}
+#gear:hover{transform:rotate(90deg)}
+#smenu{position:absolute;left:12px;top:60px;background:#0d0d0d;border:1px solid var(--line);border-radius:16px;padding:6px;z-index:6;min-width:230px;animation:rise .25s both}
+#smenu button{display:block;width:100%;background:none;border:0;padding:12px 14px;text-align:left;border-radius:10px}
+#smenu button:hover{background:#1c1c1c}
+#count{position:absolute;top:calc(16px + env(safe-area-inset-top));left:0;right:0;text-align:center;font-size:13px;opacity:0;pointer-events:none;letter-spacing:.06em}
+#tbar{position:absolute;top:0;left:0;height:3px;background:var(--y);width:100%;transform-origin:left}
+#sheetf{position:absolute;top:22%;left:0;right:0;text-align:center;font-size:clamp(22px,5vw,34px);font-weight:500;opacity:0;pointer-events:none;z-index:4;text-shadow:0 0 30px #000}
+.stage{width:min(96vw,900px);height:min(650px,calc(100dvh - 170px));perspective:1600px}
+.card{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,.7,.2,1)}
+.card.fl{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);border-radius:26px;background:#050505;overflow:hidden}
+.face.back{transform:rotateY(180deg)}
+.in{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:28px;scrollbar-width:thin;scrollbar-color:#444 transparent}
+.c{min-height:100%;display:flex;flex-direction:column;justify-content:center;width:100%}
+.t{white-space:pre-wrap;line-height:1.4;overflow-wrap:anywhere;font-weight:400}
+.c img{display:block;max-width:100%;max-height:420px;margin:14px auto 0;object-fit:contain;border-radius:10px;cursor:zoom-in}
+.in.only{padding:10px}.in.only .c{height:100%;justify-content:center}.in.only img{width:100%;height:100%;max-height:none;margin:0}
+.ctl{display:flex;gap:clamp(12px,4vw,26px)}
+.rb{width:var(--btn);height:var(--btn);border-radius:50%;border:1.5px solid currentColor;background:color-mix(in srgb,currentColor 10%,#000);display:grid;place-items:center;transition:transform .2s,box-shadow .3s,background .2s}
+.rb svg{width:28px;height:28px;transition:transform .3s}
+.rb:hover{box-shadow:0 0 24px color-mix(in srgb,currentColor 45%,transparent);background:color-mix(in srgb,currentColor 18%,#000)}
+.rb:hover svg{transform:scale(1.15) rotate(-6deg)}
+.rb:active{transform:scale(.88)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.88);display:grid;place-items:center;z-index:20;padding:20px;backdrop-filter:blur(6px)}
+.box{background:#0d0d0d;border:1px solid var(--line);border-radius:24px;padding:26px;width:min(440px,100%);max-height:88dvh;overflow:auto;animation:rise .35s both}
+.box h2{font-weight:500;margin-bottom:12px}
+.box li{margin:0 0 9px 18px;font-size:14px;line-height:1.45;opacity:.9}
+.row{display:flex;gap:10px;margin-top:16px}.row .pill{flex:1;justify-content:center}
+#viewer{background:#000;z-index:30;overflow:hidden;touch-action:none;padding:0;display:block}
+#viewer img{position:absolute;left:50%;top:50%;max-width:96vw;max-height:92dvh;transform-origin:center;user-select:none;cursor:grab;-webkit-user-drag:none}
+#vx{position:absolute;right:14px;top:calc(14px + env(safe-area-inset-top));width:46px;height:46px;border-radius:50%;border:1px solid #555;background:#111;display:grid;place-items:center;z-index:2}
+#toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:30px;font-size:14px;z-index:50;max-width:90vw;text-align:center}
+@media(max-width:520px){:root{--btn:54px}.in{padding:18px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
 </style>
 </head>
 <body>
-
 <svg width="0" height="0" style="position:absolute"><defs>
 <symbol id="up" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></symbol>
 <symbol id="down" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></symbol>
@@ -184,7 +83,7 @@ select:disabled { opacity: .35; }
 <symbol id="set" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
 <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
 </defs></svg>
-
+ 
 <!-- MAIN PAGE -->
 <main id="home" class="page">
   <div class="t1">Stuex</div>
@@ -192,34 +91,25 @@ select:disabled { opacity: .35; }
   <div class="t3">By Pankaj Mehra</div>
   <div class="menu">
     <button class="pill main" id="bImp">Import file</button>
-    <div class="pill" id="pTimer" role="switch" aria-checked="false" tabindex="0">
-      <span>Timer</span>
-      <select id="secs" disabled></select>
-      <span class="sw"></span>
-    </div>
-    <div class="pill" id="pRand" role="switch" aria-checked="false" tabindex="0">
-      <span>Randomize<small>Shuffles on every import</small></span>
-      <span class="sw"></span>
-    </div>
-    <button class="pill" id="bResume" hidden>Resume last game</button>
+    <div class="pill" id="tTimer" role="switch" aria-checked="false" tabindex="0"><span>Timer</span>
+      <select id="secs" disabled></select><span class="sw"></span></div>
+    <div class="pill" id="tRand" role="switch" aria-checked="false" tabindex="0"><span>Randomize<small>Shuffles on every import</small></span><span class="sw"></span></div>
     <a class="pill" href="https://stuex.github.io/Revmast/" target="_blank" rel="noopener"><span>revmast<small>stuex.github.io/Revmast</small></span><span>↗</span></a>
     <button class="pill" id="bHow">How to play</button>
   </div>
-  <input type="file" id="file" accept=".xlsx,.xls,.csv,.pdf" hidden>
-  <div id="err" role="alert"></div>
+  <input type="file" id="file" accept=".xlsx" hidden>
 </main>
-
+ 
 <!-- GAME PAGE -->
 <section id="game" class="page" hidden>
   <div id="tbar"></div>
   <button id="gear" aria-label="Settings"><svg class="i"><use href="#set"/></svg></button>
-  <div id="smenu" hidden>
-    <button id="mQuit">Quit game</button>
-    <button id="mXls">Get excel for red button tapped flashcards</button>
-  </div>
-  <div id="count"></div>
-  <div id="sheetf"></div>
-  <div class="stage" id="stage"></div>
+  <div id="smenu" hidden><button id="mQuit">Quit game</button><button id="mXls">Get excel for red button tapped flashcards</button></div>
+  <div id="count"></div><div id="sheetf"></div>
+  <div class="stage" id="stage"><div class="card" id="card">
+    <div class="face"><div class="in" id="fi"></div></div>
+    <div class="face back"><div class="in" id="bi"></div></div>
+  </div></div>
   <div class="ctl">
     <button class="rb" id="bU" style="color:var(--b)" aria-label="Undo"><svg class="i"><use href="#undo"/></svg></button>
     <button class="rb" id="bD" style="color:var(--r)" aria-label="Wrong"><svg class="i"><use href="#down"/></svg></button>
@@ -227,509 +117,155 @@ select:disabled { opacity: .35; }
     <button class="rb" id="bG" style="color:var(--g)" aria-label="Right"><svg class="i"><use href="#up"/></svg></button>
   </div>
 </section>
-
+ 
 <!-- OVERLAYS -->
-<div class="ov" id="how" hidden>
-  <div class="box">
-    <h2>How to play</h2>
-    <ul>
-      <li>Import an .xlsx, .xls, .csv, or .pdf file. Column A is the front, column B is the back.</li>
-      <li><b style="color:var(--g)">Thumbs up</b> = right: swipe right to left, tap it, or press →.</li>
-      <li><b style="color:var(--r)">Thumbs down</b> = wrong: swipe left to right, tap it, or press ←.</li>
-      <li><b style="color:var(--b)">Undo</b> = previous card: tap it or press Right Shift.</li>
-      <li><b style="color:var(--y)">Flip</b>: tap the card, tap the button, or press Enter.</li>
-      <li>Long text: scroll with the mouse wheel, drag up or down, or press ↑ ↓.</li>
-      <li>Images: double tap or double click to open full screen. Zoom with Ctrl +/−, move with Ctrl + arrows or by dragging, close with Esc or ✕.</li>
-      <li>Timer: when it runs out, the game moves on to the next card.</li>
-      <li>At the end, or from the settings button, download an Excel file of your wrong cards.</li>
-    </ul>
-    <div class="row-btn"><button class="pill main" id="hSkip">Skip / Close</button></div>
-  </div>
-</div>
-
-<div class="ov" id="dm" hidden>
-  <div class="box" id="dmb"></div>
-</div>
-
-<div class="ov" id="viewer" hidden>
-  <button id="vx" aria-label="Close"><svg class="i"><use href="#x"/></svg></button>
-  <img id="vimg" alt="Fullscreen card image">
-</div>
-
+<div class="ov" id="how" hidden><div class="box"><h2>How to play</h2><ul>
+<li>Import an .xlsx file. Column A is the front, column B is the back. Every sheet is used.</li>
+<li><b style="color:var(--g)">Thumbs up</b> = right: tap it or press →.</li>
+<li><b style="color:var(--r)">Thumbs down</b> = wrong: tap it or press ←.</li>
+<li><b style="color:var(--b)">Undo</b> = previous card: tap it or press Right Shift.</li>
+<li><b style="color:var(--y)">Flip</b>: tap the card, tap the button, or press Enter.</li>
+<li>Long text: scroll with the mouse wheel, drag up or down, or press ↑ ↓.</li>
+<li>Images: double tap or double click to open full screen (or press F). Zoom with Ctrl +/−, move with Ctrl + arrows or by dragging, close with Esc or ✕.</li>
+<li>Timer: when it runs out, the card counts as wrong.</li>
+<li>At the end, or from the settings button, download an Excel file of your wrong cards.</li></ul>
+<div class="row"><button class="pill" id="hSkip">Skip</button><button class="pill main" id="hDemo">Try demo</button></div></div></div>
+ 
+<div class="ov" id="done" hidden><div class="box" style="text-align:center"><h2 id="dT"></h2><p id="dS" style="opacity:.7"></p>
+<p id="dQ" style="margin-top:14px">Do you want to get excel for wrong answers?</p>
+<div class="row"><button class="pill" id="dNo">No</button><button class="pill main" id="dYes">Yes</button></div></div></div>
+ 
+<div class="ov" id="viewer" hidden><button id="vx" aria-label="Close"><svg class="i"><use href="#x"/></svg></button><img id="vimg" alt=""></div>
 <div id="toast" hidden></div>
-
+ 
 <script>
-'use strict';
-const $ = id => document.getElementById(id);
-const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-const S = { cards: [], i: 0, ans: new Map(), file: '', kind: '', sheets: [], urls: [], timer: null, left: 0, prev: null, on: false, ct: 0, busy: false, hist: [], bt: 0, rand: false, useTimer: false, secs: 30 };
-const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
-const cx = document.createElement('canvas').getContext('2d');
-
-/* ---------- UI Helpers & Animations ---------- */
-function toast(m, ms = 2600) {
-  const t = $('toast');
-  t.textContent = m;
-  t.hidden = false;
-  clearTimeout(toast.h);
-  toast.h = setTimeout(() => t.hidden = true, ms);
-}
-const err = m => $('err').textContent = m || '';
-
-function flash(el, ms) {
-  if(!el) return;
-  el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none', offset: .15 }, { opacity: 1, offset: .85 }, { opacity: 0 }], { duration: ms });
-}
-
-function blink(ok) {
-  const c = ok ? '#2ee59d' : '#ff4d6d';
-  document.querySelectorAll('.face').forEach(f => f.animate([
-    { borderColor: '#3a3a3a', boxShadow: '0 0 0 0 transparent' },
-    { borderColor: c, boxShadow: `0 0 26px ${c}`, offset: .25 },
-    { borderColor: '#3a3a3a', boxShadow: '0 0 0 0 transparent', offset: .5 },
-    { borderColor: c, boxShadow: `0 0 26px ${c}`, offset: .75 },
-    { borderColor: c, boxShadow: `0 0 26px ${c}` }
-  ], { duration: 560 }));
-}
-
-function lum(c) {
-  cx.fillStyle = '#fff'; cx.fillStyle = c;
-  const h = cx.fillStyle; let r, g, b;
-  if (h[0] == '#') { r = parseInt(h.substr(1, 2), 16); g = parseInt(h.substr(3, 2), 16); b = parseInt(h.substr(5, 2), 16); }
-  else [r, g, b] = h.match(/[\d.]+/g).map(Number);
-  return (.299 * r + .587 * g + .114 * b) / 255;
-}
-const okC = c => /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]{3,20})$/i.test((c || '').trim());
-
-/* ---------- HTML Clean / Cell side ---------- */
-function wrap(t, s) {
-  if (!t) return t; let st = '', c = s.c;
-  if (s.h) { st += 'background:' + s.h + ';'; if (lum(s.h) > .5) c = '#000'; } else if (c && lum(c) < .35) c = '#fff';
-  if (c) st += 'color:' + c + ';'; if (s.b) st += 'font-weight:700;'; if (s.i) st += 'font-style:italic;'; if (s.u) st += 'text-decoration:underline;';
-  return st ? '<span style="' + st + '">' + t + '</span>' : t;
-}
-
-function clean(html) {
-  const d = new DOMParser().parseFromString(html, 'text/html');
-  const walk = (n, st) => {
-    let o = '';
-    n.childNodes.forEach(c => {
-      if (c.nodeType == 3) o += wrap(esc(c.nodeValue), st);
-      else if (c.nodeType == 1) {
-        const t = c.tagName.toLowerCase();
-        if (t == 'br') { o += '\n'; return; }
-        if (/^(script|style|iframe|object|embed)$/.test(t)) return;
-        const s = { ...st }, y = c.style || {};
-        if (t == 'b' || t == 'strong' || /bold|^[6-9]00$/.test(y.fontWeight)) s.b = 1;
-        if (t == 'i' || t == 'em' || y.fontStyle == 'italic') s.i = 1;
-        if (t == 'u' || /underline/.test(y.textDecoration || y.textDecorationLine || '')) s.u = 1;
-        if (okC(y.color)) s.c = y.color; if (okC(y.backgroundColor)) s.h = y.backgroundColor;
-        o += walk(c, s);
-      }
-    });
-    return o;
-  };
-  return walk(d.body, {});
-}
-
-function cellSide(c, img) {
-  const text = c ? String(c.w ?? c.v ?? '') : '';
-  const html = !c ? '' : (c.h ? clean(c.h) : esc(text));
-  return { html, text, img: img || null };
-}
-
-/* ---------- Parsing Excel & PDF ---------- */
-async function toURL(blob, urls) {
-  let u = URL.createObjectURL(blob); urls.push(u); if (blob.size < 2e6) return u;
-  try {
-    const bm = await createImageBitmap(blob), k = Math.min(1, 2400 / Math.max(bm.width, bm.height));
-    if (k == 1) return u;
-    const c = document.createElement('canvas'); c.width = bm.width * k | 0; c.height = bm.height * k | 0;
-    c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
-    const nb = await new Promise(r => c.toBlob(r, 'image/jpeg', .92));
-    if (nb && nb.size < blob.size) { u = URL.createObjectURL(nb); urls.push(u); }
-  } catch (e) { }
-  return u;
-}
-
-async function extractImages(buf, urls) {
-  const z = await JSZip.loadAsync(buf), out = {}, P = new DOMParser();
-  const rd = async p => { const f = z.file(p); return f ? P.parseFromString(await f.async('string'), 'application/xml') : null; };
-  const rels = async p => { const d = await rd(p), m = {}; if (d) [...d.getElementsByTagName('Relationship')].forEach(e => m[e.getAttribute('Id')] = e.getAttribute('Target')); return m; };
-  const res = (base, t) => { if (t[0] == '/') return t.slice(1); const a = base.split('/'); a.pop(); t.split('/').forEach(s => s == '..' ? a.pop() : a.push(s)); return a.join('/'); };
-  const rp = p => p.replace(/([^/]+)$/, '_rels/$1.rels');
-  const wb = await rd('xl/workbook.xml'), wr = await rels('xl/_rels/workbook.xml.rels'); if (!wb) return out;
-  for (const s of wb.getElementsByTagName('sheet')) {
-    const name = s.getAttribute('name'), sp = res('xl/workbook.xml', wr[s.getAttribute('r:id')] || '');
-    for (const t of Object.values(await rels(rp(sp)))) {
-      if (!/drawings\/[^/]*\.xml$/.test(t)) continue;
-      const dp = res(sp, t), dd = await rd(dp), dr = await rels(rp(dp)); if (!dd) continue;
-      for (const a of [...dd.getElementsByTagName('xdr:twoCellAnchor'), ...dd.getElementsByTagName('xdr:oneCellAnchor')]) {
-        const fr = a.getElementsByTagName('xdr:from')[0], bl = a.getElementsByTagName('a:blip')[0]; if (!fr || !bl) continue;
-        const col = +fr.getElementsByTagName('xdr:col')[0].textContent, row = +fr.getElementsByTagName('xdr:row')[0].textContent, tg = dr[bl.getAttribute('r:embed')];
-        if (!tg || col > 1) continue;
-        const f = z.file(res(dp, tg)), ext = (tg.split('.').pop() || '').toLowerCase().replace('jpg', 'jpeg');
-        if (!f || !/^(png|jpeg|gif|webp|bmp)$/.test(ext)) continue;
-        out[name + '|' + row + '|' + col] = await toURL(new Blob([await f.async('arraybuffer')], { type: 'image/' + ext }), urls);
-      }
-    }
-  }
-  return out;
-}
-
-async function parseXlsx(buf, name, urls) {
-  const wb = XLSX.read(buf, { type: 'array', cellHTML: true, cellStyles: true }); let im = {};
-  try { im = await extractImages(buf, urls); } catch (e) { console.warn('Image extraction failed', e); }
-  const cards = [];
-  wb.SheetNames.forEach(sn => {
-    const ws = wb.Sheets[sn]; if (!ws || !ws['!ref']) return; const r = XLSX.utils.decode_range(ws['!ref']);
-    for (let R = r.s.r; R <= r.e.r; R++) {
-      const side = C => cellSide(ws[XLSX.utils.encode_cell({ r: R, c: C })], im[sn + '|' + R + '|' + C]);
-      const f = side(0), b = side(1); if (!(f.text.trim() || f.img || b.text.trim() || b.img)) continue;
-      cards.push({ id: name + '|' + sn + '|' + (R + 1), sheet: sn, row: R + 1, front: f, back: b });
-    }
-  });
-  return { cards, sheets: wb.SheetNames };
-}
-
-function hlKind(c) {
-  if (!c || c.length < 3) return null; const [r, g, b] = [...c].map(v => v / 255), mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
-  if (d < .08) return null;
-  let h = 60 * (mx == r ? ((g - b) / d + 6) % 6 : mx == g ? (b - r) / d + 2 : (r - g) / d + 4);
-  if (h >= 40 && h <= 70 && g > .6) return 'y'; if ((h >= 290 || h <= 10) && r > .6 && (g + b) / 2 > .25) return 'p'; return null;
-}
-
-function quads(a) {
-  const q = a.quadPoints, o = []; if (q && q.length) {
-    const f = q.flat ? q.flat() : q;
-    if (typeof f[0] == 'object') for (let i = 0; i + 3 < f.length; i += 4) { const s = f.slice(i, i + 4), x = s.map(p => p.x), y = s.map(p => p.y); o.push([Math.min(...x), Math.min(...y), Math.max(...x), Math.max(...y)]); }
-    else for (let i = 0; i + 7 < f.length; i += 8) { const x = [0, 2, 4, 6].map(k => f[i + k]), y = [1, 3, 5, 7].map(k => f[i + k]); o.push([Math.min(...x), Math.min(...y), Math.max(...x), Math.max(...y)]); }
-  }
-  return o.length ? o : [a.rect];
-}
-
-async function parsePdf(buf, name) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise, seg = []; let text = false, anyHl = false;
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const pg = await pdf.getPage(p), an = (await pg.getAnnotations()).filter(a => a.subtype == 'Highlight'),
-      tc = (await pg.getTextContent()).items.filter(i => i.str && i.str.trim()); if (tc.length) text = true;
-    for (const a of an) {
-      anyHl = true; const k = hlKind(a.color); if (!k) continue;
-      const rs = quads(a).sort((a, b) => b[3] - a[3] || a[0] - b[0]), parts = [];
-      for (const [x1, y1, x2, y2] of rs) tc.filter(it => it.width > 0).map(it => {
-        const e = it.transform[4], f = it.transform[5], h = it.height || 10;
-        if (f + h * .35 < y1 - 2 || f + h * .35 > y2 + 2) return null; const a0 = Math.max(e, x1), a1 = Math.min(e + it.width, x2); if (a1 <= a0) return null;
-        const n = it.str.length; return { x: e, s: it.str.slice(Math.round((a0 - e) / it.width * n), Math.round((a1 - e) / it.width * n)) };
-      }).filter(Boolean).sort((a, b) => a.x - b.x).forEach(o => parts.push(o.s));
-      const t = parts.join(' ').replace(/\s+/g, ' ').trim();
-      seg.push({ k, t, p, y: rs[0][3], x: rs[0][0] });
-    }
-  }
-  if (!anyHl) return { cards: [], empty: text ? 'No highlight annotations found.' : 'This PDF looks scanned. OCR is not included in this build.' };
-  seg.sort((a, b) => a.p - b.p || b.y - a.y || a.x - b.x);
-  const warn = []; seg.filter(s => !s.t).forEach(s => warn.push('Page ' + s.p + ': a ' + (s.k == 'p' ? 'pink' : 'yellow') + ' highlight had no readable text and was skipped.'));
-  const P = seg.filter(s => s.k == 'p' && s.t), Y = seg.filter(s => s.k == 'y' && s.t), cards = [];
-  for (let i = 0; i < Math.min(P.length, Y.length); i++) cards.push({ id: name + '|PDF|' + (i + 1), sheet: 'PDF', row: i + 1, front: { html: esc(P[i].t), text: P[i].t, img: null }, back: { html: esc(Y[i].t), text: Y[i].t, img: null } });
-  P.slice(Y.length).forEach(s => warn.push('Unmatched pink (front) on page ' + s.p + ': ' + s.t)); Y.slice(P.length).forEach(s => warn.push('Unmatched yellow (back) on page ' + s.p + ': ' + s.t));
-  return { cards, sheets: ['PDF'], warn, empty: 'No pink/yellow pairs were found.' };
-}
-
-/* ---------- File Importing & Flow ---------- */
-async function importFile(f) {
-  err(''); if (!f) return; const m = f.name.match(/\.(xlsx|xls|csv|pdf)$/i);
-  if (!m) return err('Unsupported file type. Choose .xlsx, .xls, .csv or .pdf.'); if (!f.size) return err('The file is empty.');
-  const pdf = /pdf/i.test(m[1]), urls = [];
-  if (pdf ? !window.pdfjsLib : !(window.XLSX && window.JSZip)) return err('Required libraries did not load.');
-  toast('Importing…', 60000);
-  try {
-    const buf = await f.arrayBuffer(), r = pdf ? await parsePdf(buf, f.name) : await parseXlsx(buf, f.name, urls);
-    if (!r.cards.length) throw new Error(r.empty || 'No flashcards found.');
-    if (pdf) preview(r, f.name); else begin(r.cards, f.name, 'xlsx', r.sheets, urls);
-  }
-  catch (e) { urls.forEach(u => URL.revokeObjectURL(u)); err('Could not process file: ' + (e.message || e)); }
-}
-
-function preview(r, name) {
-  ask('<h2>PDF preview</h2><p>' + r.cards.length + ' flashcard(s) found.</p>' + (r.warn && r.warn.length ? '<div class="warn">' + r.warn.map(esc).join('<br>') + '</div>' : '') +
-    r.cards.map(c => '<div class="pv">' + esc(c.front.text) + ' → <b>' + esc(c.back.text) + '</b></div>').join(''),
-    [['Cancel'], ['Start game', () => begin(r.cards, name, 'pdf', ['PDF'], []), 1]]);
-}
-
-function begin(cards, name, kind, sheets, urls) {
-  S.urls.forEach(u => URL.revokeObjectURL(u)); S.urls = urls;
-  cards = cards.slice();
-  if (S.rand) for (let i = cards.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [cards[i], cards[j]] = [cards[j], cards[i]]; }
-  Object.assign(S, { cards, i: 0, ans: new Map(), file: name, kind, sheets, prev: null, on: true, busy: false, hist: [], multi: sheets.length > 1 });
-  $('home').hidden = true; $('game').hidden = false; $('bResume').hidden = true;
-  toast('Loaded ' + cards.length + ' cards', 1200);
-  render(0);
-}
-
-/* ---------- UI Rendering & Display ---------- */
-function face(side, cls) {
-  let o = '';
-  const hasText = !!side.html;
-  if (hasText || !side.img) o += '<div class="t">' + (side.html || '<span style="color:#777">(empty)</span>') + '</div>';
-  if (side.img) o += '<div class="im"><img alt="Flashcard image" draggable="false" src="' + side.img + '"></div>';
-  return '<div class="face ' + cls + '"><div class="in"><div class="c-wrap">' + o + '</div></div></div>';
-}
-
-function fit(f) {
-  const el = f.querySelector('.in'); if (!el || !f.clientHeight) return;
-  f.classList.remove('ov');
-  const over = f.scrollHeight > f.clientHeight + 1;
-  f.classList.toggle('ov', over);
-  f.scrollTop = 0;
-}
-
-let rt = 0;
-const refit = () => document.querySelectorAll('#card .face').forEach(fit);
-
-function render(s) {
-  const c = S.cards[S.i], stage = $('stage'), old = $('card');
-  stage.querySelectorAll('.card').forEach(e => { if (e !== old) e.remove(); });
-  const nu = document.createElement('div'); nu.className = 'card'; nu.id = 'card';
-  nu.innerHTML = face(c.front, 'fr') + face(c.back, 'bk');
-  if (old) old.removeAttribute('id');
-  stage.append(nu);
-
-  nu.querySelectorAll('.im img').forEach(i => i._s = { z: 1, x: 0, y: 0 });
-  nu.querySelectorAll('.face').forEach(fit);
-
-  if (old) {
-    if (s) {
-      const W = stage.clientWidth, tr = v => 'translateX(' + v + 'px)';
-      nu.animate([{ opacity: 0, transform: tr(-s * 70) + ' scale(.95)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' });
-      old.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: tr(s * 110) + ' rotate(' + (s * 4) + 'deg)' }], { duration: 240, easing: 'ease-in' });
-      setTimeout(() => old.remove(), 250);
-    } else old.remove();
-  }
-
-  $('count').textContent = (S.i + 1) + ' / ' + S.cards.length;
-  flash($('count'), 2000);
-
-  if (S.multi && S.prev !== c.sheet) {
-    $('sheetf').textContent = c.sheet;
-    flash($('sheetf'), 1600);
-  }
-  S.prev = c.sheet;
-  startTimer();
-}
-
-/* ---------- Actions & Logic ---------- */
-const modalOpen = () => !$('dm').hidden || !$('how').hidden, fsOpen = () => !$('viewer').hidden;
-
-function mark(ok) {
-  if (!S.on || S.busy || modalOpen() || fsOpen()) return;
-  S.busy = true; stopTimer();
-  S.ans.set(S.cards[S.i].id, ok ? 'c' : 'w');
-  blink(ok);
-  setTimeout(() => {
-    if (!S.on) { S.busy = false; return; }
-    step(1, ok ? -1 : 1);
-  }, 560);
-}
-
-function step(d, s) {
-  if (!S.on) return;
-  if (d > 0 && S.i >= S.cards.length - 1) { S.busy = false; finish(); return; }
-  if (d < 0 && S.i == 0) { toast('This is the first card'); S.busy = false; return; }
-  if (d > 0) S.hist.push(s);
-  S.i += d;
-  render(s);
-  clearTimeout(S.bt);
-  S.bt = setTimeout(() => S.busy = false, 380);
-}
-
-function undo() {
-  if (!S.on || S.busy || modalOpen() || fsOpen()) return;
-  step(-1, -(S.hist.length ? S.hist.pop() : -1));
-}
-
-function flip() {
-  if (!S.on || S.busy || modalOpen() || fsOpen()) return;
-  $('card').classList.toggle('f');
-}
-
-function finish() {
-  stopTimer();
-  const n = S.cards.length, v = [...S.ans.values()], c = v.filter(x => x == 'c').length, w = v.filter(x => x == 'w').length;
-  const sum = '<p style="opacity:.7;margin-bottom:12px">' + c + ' right, ' + w + ' wrong</p>';
-  if (!w) ask('<h2>Round complete</h2>' + sum, [['Back to home', home, 1]]);
-  else ask('<h2>Round complete</h2>' + sum + '<p>Do you want to get excel for wrong answers?</p>', [['No', home], ['Yes', async () => { await exportWrong(); home(); }, 1]]);
-}
-
-function home() {
-  stopTimer(); S.on = false; S.busy = false;
-  $('game').hidden = true; $('smenu').hidden = true; $('home').hidden = false;
-  $('bResume').hidden = !S.cards.length;
-}
-
-/* ---------- Timer ---------- */
-function stopTimer() { clearInterval(S.timer); S.timer = null; $('tbar').style.transform = 'scaleX(0)'; }
-function startTimer() {
-  stopTimer();
-  if (!S.useTimer) { $('tbar').style.display = 'none'; return; }
-  $('tbar').style.display = 'block';
-  let tStart = Date.now();
-  S.timer = setInterval(() => {
-    if (modalOpen() || S.busy) return;
-    let p = (Date.now() - tStart) / (S.secs * 1000);
-    $('tbar').style.transform = `scaleX(${Math.max(0, 1 - p)})`;
-    if (p >= 1) { stopTimer(); step(1, -1); }
-  }, 100);
-}
-
-/* ---------- Image Viewer & Interactions ---------- */
-const curFace = () => $('card') && $('card').querySelector('.face.' + ($('card').classList.contains('f') ? 'bk' : 'fr')),
-  curImg = () => fsOpen() ? $('vimg') : (curFace() || 0) && curFace().querySelector('.im img');
-
-let vz = 1, vx = 0, vy = 0;
-const vimg = $('vimg');
-const vApply = () => vimg.style.transform = `translate(-50%,-50%) translate(${vx}px,${vy}px) scale(${vz})`;
-
-function openViewer(src) { vimg.src = src; vz = 1; vx = vy = 0; vApply(); $('viewer').hidden = false; }
-const closeViewer = () => $('viewer').hidden = true, zoom = d => { vz = Math.min(8, Math.max(.5, vz + d)); vApply(); };
-
-/* ---------- Gestures & Binding ---------- */
-let sx = 0, sy = 0, swiped = 0, lastImg = 0;
-function bindGestures() {
-  const stage = $('stage');
-  stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-  stage.addEventListener('touchend', e => {
-    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { swiped = Date.now(); mark(dx < 0); }
-  }, { passive: true });
-
-  stage.addEventListener('click', e => {
-    if (Date.now() - swiped < 400) return;
-    if (e.target.tagName === 'IMG' && Date.now() - lastImg < 320) { flip(); openViewer(e.target.src); lastImg = 0; return; }
-    if (e.target.tagName === 'IMG') lastImg = Date.now();
-    flip();
-  });
-
-  $('vx').onclick = closeViewer;
-  $('viewer').addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY < 0 ? .25 : -.25); }, { passive: false });
-
-  let drag = null;
-  vimg.addEventListener('pointerdown', e => { drag = { x: e.clientX - vx, y: e.clientY - vy }; vimg.setPointerCapture(e.pointerId); vimg.style.cursor = 'grabbing'; });
-  vimg.addEventListener('pointermove', e => { if (!drag) return; vx = e.clientX - drag.x; vy = e.clientY - drag.y; vApply(); });
-  vimg.addEventListener('pointerup', () => { drag = null; vimg.style.cursor = 'grab'; });
-  vimg.addEventListener('dblclick', () => { vz = 1; vx = vy = 0; vApply(); });
-}
-
-/* ---------- Keyboard Support ---------- */
-function onKey(e) {
-  if (!$('viewer').hidden) {
-    const k = e.key, P = 60;
-    if (k === 'Escape') closeViewer();
-    else if (e.ctrlKey && (k === '=' || k === '+')) zoom(.25);
-    else if (e.ctrlKey && (k === '-' || k === '_')) zoom(-.25);
-    else if (e.ctrlKey && k === 'ArrowRight') { vx += P; vApply(); }
-    else if (e.ctrlKey && k === 'ArrowLeft') { vx -= P; vApply(); }
-    else if (e.ctrlKey && k === 'ArrowUp') { vy -= P; vApply(); }
-    else if (e.ctrlKey && k === 'ArrowDown') { vy += P; vApply(); }
-    else return;
-    e.preventDefault(); return;
-  }
-  if ($('game').hidden || !$('how').hidden) return;
-  if (e.ctrlKey && (e.key === '=' || e.key === '-')) { e.preventDefault(); return; }
-  if (e.code === 'ShiftRight') { e.preventDefault(); undo(); }
-  else if (e.key === 'ArrowRight') { e.preventDefault(); mark(true); }
-  else if (e.key === 'ArrowLeft') { e.preventDefault(); mark(false); }
-  else if (e.key === 'Enter') { e.preventDefault(); flip(); }
-  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    const vis = curFace() ? curFace().querySelector('.in') : null;
-    if (vis) { e.preventDefault(); vis.scrollBy({ top: e.key === 'ArrowUp' ? -90 : 90, behavior: 'smooth' }); }
-  }
-  else if (e.key === 'f' || e.key === 'F') { const im = curImg(); if (im) openViewer(im.src); }
-  else if (e.key === 'Escape') $('smenu').hidden = true;
-}
-
-/* ---------- Export Incorrect Cards ---------- */
-async function exportWrong() {
-  const w = S.cards.filter(c => S.ans.get(c.id) == 'w');
-  if (!w.length) return toast('No red button cards yet');
-  toast('Preparing excel…', 60000);
-  const wb = XLSX.utils.book_new(), U = XLSX.utils;
-  if (S.kind == 'xlsx') {
-    const by = {}; w.forEach(c => (by[c.sheet] = by[c.sheet] || []).push(c));
-    S.sheets.forEach(sn => { if (by[sn]) U.book_append_sheet(wb, U.aoa_to_sheet(by[sn].sort((a,b) => a.row - b.row).map(c => [c.front.text, c.back.text])), sn.slice(0, 31)); });
-  } else {
-    U.book_append_sheet(wb, U.aoa_to_sheet([['Front', 'Back', 'Status'], ...w.map(c => [c.front.text, c.back.text, 'Incorrect'])]), 'Flashcards');
-  }
-  XLSX.writeFile(wb, 'wrong_' + S.file.replace(/\.[^./\\]+$/, '') + '.xlsx');
-  toast('Excel downloaded', 2000);
-}
-
-/* ---------- Dialog Modal ---------- */
-function ask(html, btns) {
-  const b = $('dmb'); b.innerHTML = html + '<div class="row-btn"></div>';
-  const a = b.lastChild;
-  btns.forEach(([l, f, p]) => {
-    const x = document.createElement('button');
-    x.className = 'pill' + (p ? ' main' : '');
-    x.textContent = l;
-    x.onclick = () => { $('dm').hidden = true; f && f(); };
-    a.append(x);
-  });
-  $('dm').hidden = false;
-}
-
-/* ---------- Setup & Initialization ---------- */
-(function () {
-  const sel = $('secs');
-  for (let s = 10; s <= 120; s += 10) sel.add(new Option(s + 's', s));
-  sel.value = 30;
-
-  function bindSw(pillId, key, onToggle) {
-    const el = $(pillId);
-    const f = () => {
-      S[key] = !S[key];
-      el.classList.toggle('on', S[key]);
-      el.setAttribute('aria-checked', S[key]);
-      if (onToggle) onToggle(S[key]);
-    };
-    el.onclick = f;
-    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); f(); } };
-  }
-
-  bindSw('pTimer', 'useTimer', active => sel.disabled = !active);
-  bindSw('pRand', 'rand');
-
-  sel.onchange = e => S.secs = +e.target.value;
-  sel.onclick = e => e.stopPropagation();
-
-  $('bImp').onclick = () => $('file').click();
-  $('file').onchange = e => { importFile(e.target.files[0]); e.target.value = ''; };
-
-  $('bHow').onclick = () => $('how').hidden = false;
-  $('hSkip').onclick = () => $('how').hidden = true;
-
-  $('bResume').onclick = () => {
-    S.on = true; S.busy = false;
-    $('home').hidden = true; $('game').hidden = false; $('bResume').hidden = true;
-    render(0);
-  };
-
-  $('bG').onclick = () => mark(true);
-  $('bD').onclick = () => mark(false);
-  $('bU').onclick = undo;
-  $('bF').onclick = flip;
-
-  $('gear').onclick = e => { e.stopPropagation(); $('smenu').hidden = !$('smenu').hidden; };
-  document.addEventListener('click', () => $('smenu').hidden = true);
-
-  $('mQuit').onclick = () => ask('<h2>Quit game?</h2><p style="opacity:.7">Your answers are kept. You can resume anytime from home.</p>', [['Stay'], ['Quit game', home, 1]]);
-  $('mXls').onclick = () => { $('smenu').hidden = true; exportWrong(); };
-
-  bindGestures();
-  document.addEventListener('keydown', onKey);
-  new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(refit, 60); }).observe($('stage'));
-  addEventListener('beforeunload', () => S.urls.forEach(u => URL.revokeObjectURL(u)));
-})();
+const $=id=>document.getElementById(id), S={timer:false,secs:30,rand:false};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let deck=[],i=0,marks={},fileName='cards.xlsx',lastSheet=null,busy=false,done=false,tmr=null,tStart=0;
+ 
+/* ---------- toast / flash ---------- */
+function toast(m,ms=2600){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
+function flash(el,ms){el.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none',offset:.15},{opacity:1,offset:.85},{opacity:0}],{duration:ms})}
+function blink(ok){const c=ok?'#2ee59d':'#ff4d6d';document.querySelectorAll('.face').forEach(f=>f.animate([
+  {borderColor:'#3a3a3a',boxShadow:'0 0 0 0 transparent'},{borderColor:c,boxShadow:`0 0 26px ${c}`,offset:.25},{borderColor:'#3a3a3a',boxShadow:'0 0 0 0 transparent',offset:.5},
+  {borderColor:c,boxShadow:`0 0 26px ${c}`,offset:.75},{borderColor:c,boxShadow:`0 0 26px ${c}`}],{duration:560}))}
+ 
+/* ---------- main page ---------- */
+$('secs').innerHTML=Array.from({length:12},(_,n)=>`<option value="${(n+1)*10}"${n==2?' selected':''}>${(n+1)*10}s</option>`).join('');
+$('secs').onchange=e=>S.secs=+e.target.value;$('secs').onclick=e=>e.stopPropagation();
+function sw(id,key){const el=$(id),f=()=>{S[key]=!S[key];el.classList.toggle('on',S[key]);el.setAttribute('aria-checked',S[key]);if(key==='timer')$('secs').disabled=!S.timer};
+  el.onclick=f;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}}
+sw('tTimer','timer');sw('tRand','rand');
+$('bHow').onclick=()=>$('how').hidden=false;$('hSkip').onclick=()=>$('how').hidden=true;
+$('bImp').onclick=()=>$('file').click();
+$('file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;load(await f.arrayBuffer(),f.name)};
+$('hDemo').onclick=()=>{$('how').hidden=true;const m=(a,b)=>({a:{html:esc(a),im:[],len:a.length,raw:{v:a}},b:{html:esc(b),im:[],len:b.length,raw:{v:b}},sheet:'Demo'});
+  fileName='demo.xlsx';start([m('Tap this card to flip it','Right or wrong buttons mean you got it right or wrong'),m('Cards slide straight up','Right Shift or the blue button goes back one card'),m('Long text scrolls. Try ↑ ↓ or the mouse wheel.','Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15')])};
+ 
+/* ---------- parsing ---------- */
+const hex=c=>c&&c.argb?'#'+c.argb.slice(-6):null;
+const dark=h=>!h||/^#0{6}$/i.test(h);
+function runs(v){if(v==null)return[];if(v.richText)return v.richText.map(t=>({t:t.text,f:t.font||null}));
+  if(typeof v==='object'&&!(v instanceof Date)){v=v.result!==undefined?v.result:v.text!==undefined?v.text:'';if(v&&v.richText)v=v.richText.map(t=>t.text).join('')}
+  if(v instanceof Date)v=v.toLocaleDateString();return[{t:String(v),f:null}]}
+function cellHtml(cell){const fl=cell.fill,hl=fl&&fl.type==='pattern'&&fl.pattern==='solid'&&hex(fl.fgColor);const bg=hl&&hl.toLowerCase()!=='#ffffff'?hl:null;let len=0;
+  const html=runs(cell.value).map(r=>{const f=r.f||cell.font||{};len+=r.t.length;const col=hex(f.color);
+    const st=[f.bold?'font-weight:700':'',f.italic?'font-style:italic':'',f.underline?'text-decoration:underline':'',
+      'color:'+(!dark(col)?col:bg?'#000':'#fff'),bg?`background:${bg};padding:0 .15em;border-radius:3px`:''].filter(Boolean).join(';');
+    return `<span style="${st}">${esc(r.t)}</span>`}).join('');return{html,len}}
+async function compress(m){
+  try{const ext=(m.extension||'png').replace('jpg','jpeg'),buf=new Uint8Array(m.buffer),MIN=350*1024;let blob=new Blob([buf],{type:'image/'+ext}),out={buf,ext};
+    const bmp=await createImageBitmap(blob),w=bmp.width,h=bmp.height;
+    if(blob.size>MIN){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(bmp,0,0);
+      for(const q of[.9,.8,.7,.6,.5,.4]){const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',q));if(!b||b.size<MIN)break;if(b.size<blob.size){blob=b;out={buf:new Uint8Array(await b.arrayBuffer()),ext:'jpeg'}}}}
+    out.w=w;out.h=h;out.url=URL.createObjectURL(new Blob([out.buf],{type:'image/'+out.ext}));return out}catch(e){return null}}
+async function parse(buf){const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);const cards=[];
+  for(const ws of wb.worksheets){const imgs={};
+    for(const im of ws.getImages()){const tl=im.range.tl,r=Math.floor(tl.nativeRow??tl.row),c=Math.floor(tl.nativeCol??tl.col);if(c>1)continue;
+      const z=await compress(wb.getImage(im.imageId));if(z)(imgs[r+','+c]=imgs[r+','+c]||[]).push(z)}
+    const side=(r,c)=>{const cell=ws.getCell(r,c+1),h=cellHtml(cell);return{html:h.html,len:h.len,im:imgs[(r-1)+','+c]||[],al:cell.alignment&&cell.alignment.horizontal,
+      raw:{v:cell.value,font:cell.font,fill:cell.fill,al:cell.alignment}}};
+    for(let r=1;r<=ws.rowCount;r++){const a=side(r,0),b=side(r,1);if(!a.len&&!b.len&&!a.im.length&&!b.im.length)continue;cards.push({a,b,sheet:ws.name})}}
+  return cards}
+async function load(buf,name){toast('Importing…',60000);
+  try{const cards=await parse(buf);if(!cards.length)return toast('No filled rows found in columns A and B');fileName=name;toast('Loaded '+cards.length+' cards',1200);start(cards)}
+  catch(e){toast('Could not read this file. Use an .xlsx file.')}}
+ 
+/* ---------- game ---------- */
+function start(cards){cards.forEach((c,n)=>c.id=n);deck=cards.slice();
+  if(S.rand)for(let n=deck.length-1;n>0;n--){const j=Math.floor(Math.random()*(n+1));[deck[n],deck[j]]=[deck[j],deck[n]]}
+  i=0;marks={};lastSheet=null;done=false;$('home').hidden=true;$('done').hidden=true;$('game').hidden=false;show()}
+function face(s){const im=s.im,only=!s.len&&im.length;let fs=26;if(im.length)fs=Math.max(16,Math.min(fs,22));
+  const al=['left','right','center','justify'].includes(s.al)?s.al:'center';
+  return `<div class="in${only?' only':''}"><div class="c" style="text-align:${al}">${s.len?`<div class="t" style="font-size:${fs}px">${s.html}</div>`:''}${im.map(m=>`<img src="${m.url}" alt="">`).join('')}</div></div>`}
+function show(){if(i>=deck.length)return finish();const c=deck[i],cd=$('card');clearInterval(tmr);
+  cd.style.transition='none';cd.classList.remove('fl');void cd.offsetWidth;cd.style.transition='';
+  $('fi').innerHTML=face(c.a);$('bi').innerHTML=face(c.b);$('fi').firstChild.scrollTop=0;
+  $('count').textContent=`${i+1} / ${deck.length}`;flash($('count'),2000);
+  if(c.sheet!==lastSheet){$('sheetf').textContent=c.sheet;flash($('sheetf'),1600);lastSheet=c.sheet}
+  $('stage').animate([{opacity:0,transform:'translateY(70px) scale(.95)'},{opacity:1,transform:'none'}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});
+  busy=false;startTimer()}
+function startTimer(){const bar=$('tbar');bar.style.display=S.timer?'block':'none';if(!S.timer)return;tStart=Date.now();
+  tmr=setInterval(()=>{const p=(Date.now()-tStart)/(S.secs*1000);bar.style.transform=`scaleX(${Math.max(0,1-p)})`;if(p>=1)mark(false)},100)}
+function mark(ok){if(busy||done||!deck.length)return;busy=true;clearInterval(tmr);marks[deck[i].id]=ok;blink(ok);
+  setTimeout(()=>$('stage').animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-120px)'}],{duration:240,easing:'ease-in'}).onfinish=()=>{i++;show()},560)}
+function undo(){if(busy||(!i&&!done))return;if(done){done=false;$('done').hidden=true}else i--;delete marks[deck[i].id];show()}
+function flip(){$('card').classList.toggle('fl')}
+function finish(){clearInterval(tmr);done=true;busy=false;const w=deck.filter(c=>marks[c.id]===false).length;
+  $('dT').textContent=w?'Round complete':'Perfect round';$('dS').textContent=`${deck.length-w} right, ${w} wrong`;$('dQ').hidden=!w;$('dYes').hidden=!w;$('dNo').textContent=w?'No':'Back to home';$('done').hidden=false}
+function quit(){clearInterval(tmr);$('game').hidden=true;$('done').hidden=true;$('smenu').hidden=true;$('home').hidden=false}
+$('bG').onclick=()=>mark(true);$('bD').onclick=()=>mark(false);$('bU').onclick=undo;$('bF').onclick=flip;
+$('gear').onclick=()=>$('smenu').hidden=!$('smenu').hidden;$('mQuit').onclick=quit;$('mXls').onclick=()=>{$('smenu').hidden=true;exportWrong()};
+$('dNo').onclick=quit;$('dYes').onclick=async()=>{await exportWrong();quit()};
+ 
+/* ---------- card gestures ---------- */
+let lastImg=0;
+const stage=$('stage');
+stage.addEventListener('click',e=>{
+  if(e.target.tagName==='IMG'&&Date.now()-lastImg<320){flip();openViewer(e.target.src);lastImg=0;return}
+  if(e.target.tagName==='IMG')lastImg=Date.now();flip()});
+const vis=()=>document.querySelector(($('card').classList.contains('fl')?'#bi':'#fi')+' .in');
+ 
+/* ---------- image viewer ---------- */
+let vz=1,vx=0,vy=0;const vimg=$('vimg');
+const vApply=()=>vimg.style.transform=`translate(-50%,-50%) translate(${vx}px,${vy}px) scale(${vz})`;
+function openViewer(src){vimg.src=src;vz=1;vx=vy=0;vApply();$('viewer').hidden=false}
+const closeViewer=()=>$('viewer').hidden=true,zoom=d=>{vz=Math.min(8,Math.max(.5,vz+d));vApply()};
+$('vx').onclick=closeViewer;$('viewer').addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?.25:-.25)},{passive:false});
+let drag=null;vimg.addEventListener('pointerdown',e=>{drag={x:e.clientX-vx,y:e.clientY-vy};vimg.setPointerCapture(e.pointerId);vimg.style.cursor='grabbing'});
+vimg.addEventListener('pointermove',e=>{if(!drag)return;vx=e.clientX-drag.x;vy=e.clientY-drag.y;vApply()});
+vimg.addEventListener('pointerup',()=>{drag=null;vimg.style.cursor='grab'});
+vimg.addEventListener('dblclick',()=>{vz=1;vx=vy=0;vApply()});
+ 
+/* ---------- keyboard ---------- */
+addEventListener('keydown',e=>{
+  if(!$('viewer').hidden){const k=e.key,P=60;
+    if(k==='Escape')closeViewer();
+    else if(e.ctrlKey&&(k==='='||k==='+')){zoom(.25)}else if(e.ctrlKey&&(k==='-'||k==='_')){zoom(-.25)}
+    else if(e.ctrlKey&&k==='ArrowRight'){vx+=P;vApply()}else if(e.ctrlKey&&k==='ArrowLeft'){vx-=P;vApply()}
+    else if(e.ctrlKey&&k==='ArrowUp'){vy-=P;vApply()}else if(e.ctrlKey&&k==='ArrowDown'){vy+=P;vApply()}else return;
+    e.preventDefault();return}
+  if($('game').hidden||!$('how').hidden)return;
+  if(e.ctrlKey&&(e.key==='='||e.key==='-')){e.preventDefault();return}
+  if(e.code==='ShiftRight'){e.preventDefault();undo()}
+  else if(e.key==='ArrowRight'){e.preventDefault();mark(true)}
+  else if(e.key==='ArrowLeft'){e.preventDefault();mark(false)}
+  else if(e.key==='Enter'){e.preventDefault();flip()}
+  else if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();vis().scrollBy({top:e.key==='ArrowUp'?-90:90,behavior:'smooth'})}
+  else if(e.key==='f'||e.key==='F'){const im=vis().querySelector('img');if(im)openViewer(im.src)}
+  else if(e.key==='Escape')$('smenu').hidden=true});
+ 
+/* ---------- export wrong cards ---------- */
+async function exportWrong(){const w=deck.filter(c=>marks[c.id]===false);if(!w.length)return toast('No red button cards yet');
+  toast('Preparing excel…',60000);const wb=new ExcelJS.Workbook(),sh={};
+  for(const c of w){const o=sh[c.sheet]||(sh[c.sheet]={ws:wb.addWorksheet(c.sheet.slice(0,31)),n:0});const ws=o.ws,r=++o.n;ws.getColumn(1).width=ws.getColumn(2).width=45;let hmax=0;
+    [c.a,c.b].forEach((s,k)=>{const cell=ws.getCell(r,k+1);cell.value=s.raw.v;if(s.raw.font)cell.font=s.raw.font;if(s.raw.fill)cell.fill=s.raw.fill;
+      cell.alignment={...(s.raw.al||{}),wrapText:true,vertical:'top'};
+      s.im.forEach(m=>{const wd=Math.min(300,m.w,m.w*180/m.h),h=wd*m.h/m.w;hmax=Math.max(hmax,h);
+        ws.addImage(wb.addImage({buffer:m.buf.buffer.slice(m.buf.byteOffset,m.buf.byteOffset+m.buf.byteLength),extension:m.ext}),{tl:{col:k,row:r-1},ext:{width:wd,height:h}})})});
+    if(hmax)ws.getRow(r).height=hmax*.75+6}
+  const out=await wb.xlsx.writeBuffer(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/octet-stream'}));
+  a.download='wrong '+fileName;a.click();toast('Excel downloaded',2000)}
 </script>
 </body>
 </html>
