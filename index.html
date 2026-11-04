@@ -39,7 +39,8 @@ select:disabled{opacity:.35}
 .pop.on{display:flex}
 .pop button{background:none;border:0;padding:12px 14px;text-align:left;font-size:15px;border-radius:10px}
 .pop button:hover{background:#1a1a1a}
-#stage{position:relative;width:min(94vw,720px);height:min(650px,calc(100dvh - 190px));overflow:hidden}
+#stage{position:relative;width:95vw;height:95dvh;overflow:hidden;max-width:none;max-height:none;}
+
 .slot{position:absolute;inset:0;perspective:1400px}
 .card{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.3,1)}
 .card.flip{transform:rotateY(180deg)}
