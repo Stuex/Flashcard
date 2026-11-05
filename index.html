@@ -8,7 +8,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
 button{font:inherit;color:#fff;cursor:pointer}
-.pg{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px}
+.pg{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
 .pg.on{display:flex}
 header{text-align:center;margin-bottom:28px}
 header small{display:block;font-size:15px;color:#bbb;letter-spacing:.04em}
@@ -53,11 +53,11 @@ select:disabled{opacity:.35}
 .io .tx{display:none}
 .iw{display:grid;place-items:center;overflow:hidden;margin-top:12px;border-radius:10px}
 .io .iw:first-child{margin-top:0}
-.iw img{max-width:100%;max-height:min(500px,60dvh);object-fit:contain;transition:transform .15s;user-select:none;-webkit-user-drag:none}
+.iw img.iw img{max-width:100%;max-height:min(500px,60dvh);object-fit:contain;...}
 .io .iw img{max-height:min(700px,calc(95dvh - 150px))}
 #deck{display:flex;gap:clamp(14px,5vw,34px);margin-top:8px;flex:none}
-.cb{position:relative;width:60px;height:60px;border-radius:50%;border:2px solid var(--a);background:#000;display:grid;place-items:center;transition:transform .2s,opacity .2s}
-.cb svg{width:28px;height:28px;fill:none;stroke:var(--a);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.cb{position:relative;width:64px;height:64px;border-radius:50%;border:2px solid var(--a);background:#000;display:grid;place-items:center;transition:transform .2s,opacity .2s}
+.cb svg{width:30px;height:30px;fill:none;stroke:var(--a);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .cb:active,.cb.pr{opacity:.65;transform:translateY(-6px) scale(1.08)}
 .cb:after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--a);opacity:0;pointer-events:none}
 .cb.pr:after{animation:pf .5s}
