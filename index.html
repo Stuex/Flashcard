@@ -235,11 +235,18 @@ function media(s){const L=[...(s.u?[s.u]:[]),...(plain(s.h).match(/https?:\/\/[^
 const embed=m=>m.k==='y'?`<div class="mv" data-k="y" data-id="${m.id}" data-s="${m.s}" data-e="${m.e}"></div>`:`<div class="mv"><iframe src="https://drive.google.com/file/d/${m.id}/preview" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div>`;
 const face=(s,cls)=>{const M=media(s),t=plain(s.h).trim(),io=(!s.h||M.some(m=>m.u===t))&&(s.img.length||M.length);
   return`<div class="face ${cls}"><div class="sc"><div class="in ${io?'io':''}"><div class="tx">${s.h}</div>${s.img.map(m=>`<div class="iw"><img src="${m.u}" draggable="false" alt=""></div>`).join('')}${M.map(embed).join('')}</div></div></div>`};
-const FS=(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))?18:24;
 function fit(f){
-  const tx=f.querySelector('.tx');tx.style.fontSize=FS+'px';
-  tx.classList.toggle('one',!tx.querySelector('br')&&tx.offsetHeight<=FS*1.7);
+  const tx = f.querySelector('.tx');
+  // Gentler scaling factor (0.008) so it stays comfortable on tablets
+  const baseFS = Math.max(18, Math.round(18 + (window.innerWidth - 400) * 0.008));
+  const words = tx.textContent.trim().split(/\s+/).filter(Boolean).length;
+  const FS = (words > 0 && words < 5) ? baseFS * 2 : baseFS;
+  
+  tx.style.fontSize = FS + 'px';
+  tx.classList.toggle('one', !tx.querySelector('br') && tx.offsetHeight <= FS * 1.7);
 }
+
+
 function resetZoom(){zs={z:1,x:0,y:0};$$('.card img,#fs img,.card .mv:not([data-k]) iframe').forEach(m=>{m.style.transform='';if(m.tagName==='IMG')m.style.touchAction='none'})}
 function render(dir){
   clearInterval(tInt);killPlayers();resetZoom();flipped=false;
