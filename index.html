@@ -6,11 +6,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;margin:0;min-height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
 button{font:inherit;color:#fff;cursor:pointer}
-.pg{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.pg{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px}
 .pg.on{display:flex}
-#game.pg.on{position:relative;inset:auto;min-height:100vh;overflow-y:auto;padding:24px 0}
 header{text-align:center;margin-bottom:28px}
 header small{display:block;font-size:15px;color:#bbb;letter-spacing:.04em}
 header h1{margin:2px 0;font-size:clamp(44px,12vw,72px);font-weight:800;letter-spacing:-.02em;background:linear-gradient(90deg,#d9578f,#d9a02b,#3ea66b,#4a8fe7);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -27,7 +26,7 @@ select:disabled{opacity:.35}
 .sw i:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.3s}
 .sw input:checked+i{background:#3ea66b}
 .sw input:checked+i:before{transform:translateX(22px)}
-.top{position:relative;width:95vw;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.top{position:relative;width:min(95vw,1200px);height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;flex:none}
 .ic{--a:#8b6fdc;position:absolute;left:0;width:40px;height:40px;border-radius:50%;border:2px solid var(--a);background:#000;display:grid;place-items:center}
 #cnt{font-size:14px;color:#ddd}
 #cnt.fl{animation:bl .5s 4}
@@ -37,7 +36,7 @@ select:disabled{opacity:.35}
 .pop.on{display:flex}
 .pop button{background:none;border:0;padding:12px 14px;text-align:left;font-size:15px;border-radius:10px}
 .pop button:hover{background:#1a1a1a}
-#stage{position:relative;width:95vw;height:95vh;overflow:hidden;scroll-margin-top:0px}
+#stage{position:relative;width:min(95vw,1200px);height:calc(95dvh - 130px);max-height:calc(100dvh - 130px);overflow:hidden;flex:1}
 .slot{position:absolute;inset:0;perspective:1400px}
 .card{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.3,1)}
 .card.flip{transform:rotateY(180deg)}
@@ -54,11 +53,11 @@ select:disabled{opacity:.35}
 .io .tx{display:none}
 .iw{display:grid;place-items:center;overflow:hidden;margin-top:12px;border-radius:10px}
 .io .iw:first-child{margin-top:0}
-.iw img{max-width:100%;max-height:min(380px,45dvh);object-fit:contain;transition:transform .15s;user-select:none;-webkit-user-drag:none}
-.io .iw img{max-height:min(560px,calc(100dvh - 290px))}
-#deck{display:flex;gap:clamp(14px,5vw,34px);margin-top:16px}
-.cb{position:relative;width:64px;height:64px;border-radius:50%;border:2px solid var(--a);background:#000;display:grid;place-items:center;transition:transform .2s,opacity .2s}
-.cb svg{width:30px;height:30px;fill:none;stroke:var(--a);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.iw img{max-width:100%;max-height:min(500px,60dvh);object-fit:contain;transition:transform .15s;user-select:none;-webkit-user-drag:none}
+.io .iw img{max-height:min(700px,calc(95dvh - 150px))}
+#deck{display:flex;gap:clamp(14px,5vw,34px);margin-top:8px;flex:none}
+.cb{position:relative;width:60px;height:60px;border-radius:50%;border:2px solid var(--a);background:#000;display:grid;place-items:center;transition:transform .2s,opacity .2s}
+.cb svg{width:28px;height:28px;fill:none;stroke:var(--a);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .cb:active,.cb.pr{opacity:.65;transform:translateY(-6px) scale(1.08)}
 .cb:after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--a);opacity:0;pointer-events:none}
 .cb.pr:after{animation:pf .5s}
@@ -247,7 +246,6 @@ function render(dir){
   const c=D[i],st=$('#stage'),old=st.querySelector('.slot'),slot=document.createElement('div');
   slot.className='slot';slot.innerHTML='<div class="card">'+face(c.f,'fr')+face(c.b,'bk')+'</div>';
   st.appendChild(slot);$$('.slot:last-child .face').forEach(fit);mountPlayers();focusGame();
-  st.scrollIntoView({block:'start',behavior:'smooth'});
   if(old&&dir){
     busy=true;const o={duration:380,easing:'cubic-bezier(.4,0,.2,1)'};
     old.animate([{transform:'translateY(0)'},{transform:`translateY(${dir>0?'-100%':'100%'})`}],o).onfinish=()=>old.remove();
